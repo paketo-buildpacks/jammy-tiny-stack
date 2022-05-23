@@ -1,0 +1,47 @@
+id = "io.buildpacks.stacks.jammy.tiny"
+homepage = "https://github.com/paketo-buildpacks/jammy-tiny-stack"
+maintainer = "Paketo Buildpacks"
+
+platforms = ["linux/amd64"]
+
+[build]
+  # TODO: Set description
+  description = "ubuntu:jammy <TBD>"
+  dockerfile = "./build.Dockerfile"
+  gid = 1000
+  shell = "/bin/bash"
+  uid = 1001
+
+  [build.args]
+    sources = """
+    deb http://archive.ubuntu.com/ubuntu jammy main universe multiverse
+    deb http://archive.ubuntu.com/ubuntu jammy-updates main universe multiverse
+    deb http://archive.ubuntu.com/ubuntu jammy-security main universe multiverse
+    """
+    # TODO: Why do we use main universe and multiverse package repositories?
+    # See https://help.ubuntu.com/community/Repositories/Ubuntu for meaning
+    # of the classifications
+
+    packages = """\
+    build-essential \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    libgmp-dev \
+    libssl3 \
+    libyaml-0-2 \
+    netbase \
+    openssl \
+    tzdata \
+    xz-utils \
+    zlib1g-dev \
+    """
+
+[run]
+  description = "distroless-like jammy"
+  dockerfile = "./run/run.Dockerfile"
+  gid = 1000
+  shell = "/sbin/nologin"
+  uid = 1002
+  # TODO: use same package list interface for build and run

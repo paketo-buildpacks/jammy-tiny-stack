@@ -1,0 +1,4 @@
+PRETTY_NAME="Paketo Buildpacks Tiny Jammy"
+HOME_URL="https://github.com/paketo-buildpacks/jammy-tiny-stack"
+SUPPORT_URL="https://github.com/paketo-buildpacks/jammy-tiny-stack/blob/main/README.md"
+BUG_REPORT_URL="https://github.com/paketo-buildpacks/jammy-tiny-stack/issues/new"
