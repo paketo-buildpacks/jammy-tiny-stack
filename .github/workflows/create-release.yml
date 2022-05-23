@@ -1,0 +1,138 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+    - main
+    paths:
+    - 'stack.toml'
+    - '**.Dockerfile'
+    - 'run/*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version of the release to cut (e.g. 1.2.3)'
+        required: false
+
+concurrency: release
+
+jobs:
+  test:
+    name: Acceptance Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18.x
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Run Acceptance Tests
+      run: ./scripts/test.sh --clean
+
+    - name: Upload Build Image
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-image
+        path: build/build.oci
+
+    - name: Upload Run Image
+      uses: actions/upload-artifact@v3
+      with:
+        name: run-image
+        path: build/run.oci
+
+    - name: File Issue
+      if: ${{ failure() }}
+      run: |
+        echo "${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}" | gh auth login --with-token
+        release_issue=$(gh issue list --json number --label release-issue --jq .[0].number)
+        if [ -z $release_issue ]; \
+        then gh issue create \
+        --title "Failure: create-release workflow" \
+        --label "release-issue" \
+        --body "[Create release workflow](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}) failed to run. Please take a look to ensure CVE patches can be released. (cc @paketo-buildpacks/stacks-maintainers)" \
+        -R ${{github.repository}}; \
+        else gh issue comment $release_issue --body "Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"; \
+        fi
+        echo $release_issue
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - name: Checkout With History
+      uses: actions/checkout/@v2
+      with:
+        fetch-depth: 0  # gets full history
+
+    - name: Download Build Image
+      uses: actions/download-artifact@v3
+      with:
+        name: build-image
+
+    - name: Download Run Image
+      uses: actions/download-artifact@v3
+      with:
+        name: run-image
+
+    - name: Increment Tag
+      if: github.event.inputs.version == ''
+      id: semver
+      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@main
+
+    - name: Set Release Tag
+      id: tag
+      run: |
+        tag="${{ github.event.inputs.version }}"
+        if [ -z "${tag}" ]; then
+          tag="${{ steps.semver.outputs.tag }}"
+        fi
+        echo "::set-output name=tag::${tag}"
+
+    - name: Create Release Notes
+      id: notes
+      run: |
+        echo "::set-output name=release_body::release-note-content"
+
+    - name: Create Release
+      uses: paketo-buildpacks/github-config/actions/release/create@main
+      with:
+        repo: ${{ github.repository }}
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        tag_name: v${{ steps.tag.outputs.tag }}
+        target_commitish: ${{ github.sha }}
+        name: v${{ steps.tag.outputs.tag }}
+        body: ${{ steps.notes.outputs.release_body }}
+        draft: false
+        assets: |
+          [
+            {
+              "path": "build.oci",
+              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-build.oci",
+              "content_type": "application/gzip"
+            },
+            {
+              "path": "run.oci",
+              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-run.oci",
+              "content_type": "application/gzip"
+            }
+          ]
+
+    - name: File Issue
+      if: ${{ failure() }}
+      run: |
+        echo "${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}" | gh auth login --with-token
+        release_issue=$(gh issue list --json number --label release-issue --jq .[0].number)
+        if [ -z $release_issue ]; \
+        then gh issue create \
+        --title "Failure: create-release workflow" \
+        --label "release-issue" \
+        --body "[Create release workflow](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}) failed to run. Please take a look to ensure CVE patches can be released. (cc @paketo-buildpacks/stacks-maintainers)" \
+        -R ${{github.repository}}; \
+        else gh issue comment $release_issue --body "Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"; \
+        fi
+        echo $release_issue

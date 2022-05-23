@@ -74,6 +74,9 @@ function tools::install() {
   util::tools::jam::install \
     --directory "${STACK_DIR}/.bin"
 
+  util::tools::pack::install \
+    --directory "${STACK_DIR}/.bin"
+
   util::tools::skopeo::check
 }
 

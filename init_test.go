@@ -19,8 +19,6 @@ var stack struct {
 	RunImageID   string
 }
 
-// var skopeo pexec.Executable
-
 func by(_ string, f func()) { f() }
 
 func TestAcceptance(t *testing.T) {
@@ -42,19 +40,10 @@ func TestAcceptance(t *testing.T) {
 	// stack.RunImageID = run
 	stack.RunImageID = "stack-run-image-id"
 
-	// err = skopeo.Execute(pexec.Execution{
-	// 	Args: []string{
-	// 		"copy",
-	// 		fmt.Sprintf("oci-archive://%s", stack.RunArchive),
-	// 		fmt.Sprintf("docker-daemon:%s:latest", stack.RunImageID),
-	// 	},
-	// })
-	// Expect(err).NotTo(HaveOccurred())
-
 	SetDefaultEventuallyTimeout(10 * time.Second)
 
 	suite := spec.New("Acceptance", spec.Report(report.Terminal{}), spec.Parallel())
-	// suite("Metadata", testMetadata)
+	suite("Metadata", testMetadata)
 	suite("BuildpackIntegration", testBuildpackIntegration)
 
 	suite.Run(t)

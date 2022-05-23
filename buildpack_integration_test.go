@@ -53,7 +53,7 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 
 		goDistBuildpack, err = buildpackStore.Get.
 			WithVersion("1.2.3").
-			Execute("$HOME/workspace/paketo-buildpacks/go-dist")
+			Execute("github.com/paketo-buildpacks/go-dist")
 		Expect(err).NotTo(HaveOccurred())
 
 		source, err = occam.Source(filepath.Join("integration", "testdata", "simple_app"))

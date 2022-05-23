@@ -61,6 +61,53 @@ function util::tools::jam::install () {
   fi
 }
 
+function util::tools::pack::install() {
+  local dir
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --directory)
+        dir="${2}"
+        shift 2
+        ;;
+
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
+
+  mkdir -p "${dir}"
+  util::tools::path::export "${dir}"
+
+  local os
+  case "$(uname)" in
+    "Darwin")
+      os="macos"
+      ;;
+
+    "Linux")
+      os="linux"
+      ;;
+
+    *)
+      echo "Unknown OS \"$(uname)\""
+      exit 1
+  esac
+
+  if [[ ! -f "${dir}/pack" ]]; then
+    local version
+    version="$(jq -r .pack "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
+
+    util::print::title "Installing pack ${version}"
+    curl "https://github.com/buildpacks/pack/releases/download/${version}/pack-${version}-${os}.tgz" \
+      --silent \
+      --location \
+      --output /tmp/pack.tgz
+    tar xzf /tmp/pack.tgz -C "${dir}"
+    chmod +x "${dir}/pack"
+    rm /tmp/pack.tgz
+  fi
+}
+
 function util::tools::skopeo::check () {
   if ! command -v  skopeo &> /dev/null ; then
       util::print::error "skopeo could not be found. Please install skopeo before proceeding."
