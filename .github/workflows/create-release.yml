@@ -75,11 +75,13 @@ jobs:
         fetch-depth: 0  # gets full history
 
     - name: Download Build Image
+      id: download-build
       uses: actions/download-artifact@v3
       with:
         name: build-image
 
     - name: Download Run Image
+      id: download-run
       uses: actions/download-artifact@v3
       with:
         name: run-image
@@ -101,8 +103,8 @@ jobs:
     - name: Generate Package Receipts
       id: receipts
       run: |
-        scripts/receipts.sh --build-archive build.oci \
-                            --run-archive run.oci \
+        scripts/receipts.sh --build-archive ${{ steps.download-build.outputs.download-path }} \
+                            --run-archive ${{ steps.download-run.outputs.download-path }} \
                             --build-receipt build-receipt.txt \
                             --run-receipt run-receipt.txt
         echo "::set-output name=build_receipt::build-receipt.txt"
