@@ -42,8 +42,7 @@ RUN grep -v 'PRETTY_NAME=' "/tiny/etc/os-release" \
       | tee /tiny/etc/os-release
 
 # Distroless images use /var/lib/dpkg/status.d/<file> instead of /var/lib/dpkg/status
-# TODO: can we rm the file entirely?
-RUN echo "" > /tiny/var/lib/dpkg/status
+RUN rm -rf /tiny/var/lib/dpkg/status
 
 FROM scratch
 COPY --from=builder /tiny/ /
