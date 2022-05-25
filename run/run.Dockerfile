@@ -1,30 +1,33 @@
 FROM ubuntu:jammy AS builder
 
-ARG PACKAGE_LIST=packagelist
+ARG packages
 
 RUN apt-get update && \
   apt-get install -y xz-utils binutils zstd
 
 ADD install-certs.sh .
-ADD download-and-install-package.sh .
-
-# TODO: can we remove this?
-ADD $PACKAGE_LIST packagelist
 
 ADD files/passwd /tiny/etc/passwd
 ADD files/nsswitch.conf /tiny/etc/nsswitch.conf
 ADD files/group /tiny/etc/group
 
-RUN mkdir -p /tiny/var/lib/dpkg/status.d/
-
 RUN mkdir -p /tiny/tmp \
 # TODO: Investigate: Why do we set up a nonroot user?
     /tiny/home/nonroot \
-    && chown 65532:65532 /tiny/home/nonroot \
-    && export DEBIAN_FRONTEND=noninteractive \
-    && apt -y update \
-    && ./download-and-install-package.sh \
-    && ./install-certs.sh
+    && chown 65532:65532 /tiny/home/nonroot
+
+RUN mkdir -p /tiny/var/lib/dpkg/status.d/
+
+# We can't use dpkg -i (even with --instdir=/tiny) because we don't want to
+# install the dependencies, and dpkg-deb has no way to ignore all dependencies;
+# each dependency must be explicitly listed
+RUN apt download packages \
+    && for pkg in $packages; do \
+      dpkg-deb --field $pkg*.deb > /tiny/var/lib/dpkg/status.d/$pkg \
+      && dpkg-deb --extract $pkg*.deb /tiny; \
+    done
+
+RUN ./install-certs.sh
 
 RUN find /tiny/usr/share/doc/*/* ! -name copyright | xargs rm -rf && \
   rm -rf \
