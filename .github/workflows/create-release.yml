@@ -103,8 +103,8 @@ jobs:
     - name: Generate Package Receipts
       id: receipts
       run: |
-        scripts/receipts.sh --build-archive ${{ steps.download-build.outputs.download-path }} \
-                            --run-archive ${{ steps.download-run.outputs.download-path }} \
+        scripts/receipts.sh --build-archive "${{ steps.download-build.outputs.download-path }}/build.oci" \
+                            --run-archive "${{ steps.download-run.outputs.download-path }}/run.oci" \
                             --build-receipt build-receipt.txt \
                             --run-receipt run-receipt.txt
         echo "::set-output name=build_receipt::build-receipt.txt"
