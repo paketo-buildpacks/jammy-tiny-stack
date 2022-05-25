@@ -7,7 +7,10 @@ RUN apt-get update && \
 
 ADD install-certs.sh .
 ADD download-and-install-package.sh .
+
+# TODO: can we remove this?
 ADD $PACKAGE_LIST packagelist
+
 ADD files/passwd /tiny/etc/passwd
 ADD files/nsswitch.conf /tiny/etc/nsswitch.conf
 ADD files/group /tiny/etc/group
@@ -38,7 +41,8 @@ RUN grep -v 'PRETTY_NAME=' "/tiny/etc/os-release" \
     && cat /tmp/etc/os-release-upstream /tmp/etc/os-release \
       | tee /tiny/etc/os-release
 
-# TODO: Why do this?
+# Distroless images use /var/lib/dpkg/status.d/<file> instead of /var/lib/dpkg/status
+# TODO: can we rm the file entirely?
 RUN echo "" > /tiny/var/lib/dpkg/status
 
 FROM scratch
