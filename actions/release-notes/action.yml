@@ -29,11 +29,13 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-  - "--build-tag"
-  - "${{ inputs.build_tag }}"
-  - "--run-tag"
-  - "${{ inputs.run_tag }}"
+  - "--build-image"
+  - "${{ inputs.build_image }}"
+  - "--run-image"
+  - "${{ inputs.run_image }}"
   - "--build-diff"
   - "${{ inputs.build_receipt_diff }}"
   - "--run-diff"
   - "${{ inputs.run_receipt_diff }}"
+  - "--patched-usns"
+  - "${{ inputs.patched_usns }}"
