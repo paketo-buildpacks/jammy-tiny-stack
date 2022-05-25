@@ -95,8 +95,14 @@ jobs:
 
     - name: Create Release Notes
       id: notes
-      run: |
-        echo "::set-output name=release_body::release-note-content"
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/release-notes@main
+      with:
+        build_image: "paketobuildpacks/build-jammy-tiny:${{ steps.tag.outputs.tag }}"
+        run_image: "paketobuildpacks/run-jammy-tiny:${{ steps.tag.outputs.tag }}"
+        build_receipt_diff: "+ something"
+        run_receipt_diff: "- something else"
+        patched_usns: '[{ "name": "Hello", "url" : "www.example.com", "description" : "World!" }, { "name": "Goodbye", "url" : "www.example.com", "description" : "Moon!" }]'
 
     - name: Create Release
       uses: paketo-buildpacks/github-config/actions/release/create@main

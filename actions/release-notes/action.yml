@@ -1,0 +1,39 @@
+name: 'Create Release Notes'
+
+description: |
+  Creates release notes for a stack in Markdown format
+
+outputs:
+  release_body:
+    description: Generated detailed release notes for the stack
+    value: ${{ steps.release-notes.outputs.release_body }}
+
+inputs:
+  build_image:
+    description: 'Image registry location of build image'
+    required: true
+  run_image:
+    description: 'Image registry location of run image'
+    required: true
+  build_receipt_diff:
+    description: 'Diff between current and previous releases build package receipts'
+    required: true
+  run_receipt_diff:
+    description: 'Diff between current and previous releases run package receipts'
+    required: true
+  patched_usns:
+    description: 'JSON array of objects "{ name: USN name, url: USN URL, description: USN description}"'
+    required: false
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--build-tag"
+  - "${{ inputs.build_tag }}"
+  - "--run-tag"
+  - "${{ inputs.run_tag }}"
+  - "--build-diff"
+  - "${{ inputs.build_receipt_diff }}"
+  - "--run-diff"
+  - "${{ inputs.run_receipt_diff }}"
