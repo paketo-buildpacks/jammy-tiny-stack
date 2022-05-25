@@ -180,7 +180,6 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				HaveFile("/usr/share/doc/ca-certificates/copyright"),
 				HaveFile("/etc/ssl/certs/ca-certificates.crt"),
 				HaveDirectory("/root"),
-				HaveDirectory("/home/nonroot"),
 				HaveDirectory("/tmp"),
 				HaveFile("/etc/services"),
 				HaveFile("/etc/nsswitch.conf"),

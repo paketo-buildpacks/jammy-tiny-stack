@@ -11,17 +11,12 @@ ADD files/passwd /tiny/etc/passwd
 ADD files/nsswitch.conf /tiny/etc/nsswitch.conf
 ADD files/group /tiny/etc/group
 
-RUN mkdir -p /tiny/tmp \
-# TODO: Investigate: Why do we set up a nonroot user?
-    /tiny/home/nonroot \
-    && chown 65532:65532 /tiny/home/nonroot
-
-RUN mkdir -p /tiny/var/lib/dpkg/status.d/
+RUN mkdir -p /tiny/tmp /tiny/var/lib/dpkg/status.d/
 
 # We can't use dpkg -i (even with --instdir=/tiny) because we don't want to
 # install the dependencies, and dpkg-deb has no way to ignore all dependencies;
 # each dependency must be explicitly listed
-RUN apt download packages \
+RUN apt download $packages \
     && for pkg in $packages; do \
       dpkg-deb --field $pkg*.deb > /tiny/var/lib/dpkg/status.d/$pkg \
       && dpkg-deb --extract $pkg*.deb /tiny; \
