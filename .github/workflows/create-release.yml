@@ -1,6 +1,8 @@
 name: Create Release
 
 on:
+  repository_dispatch:
+    types: [poll-usns]
   push:
     branches:
     - main
@@ -28,6 +30,9 @@ jobs:
 
     - name: Checkout
       uses: actions/checkout@v3
+
+      # Diff USNs with latest known USN
+      # Only keep going if on push/manual trigger or there's a USNs diff
 
     - name: Run Acceptance Tests
       run: ./scripts/test.sh --clean
@@ -93,6 +98,16 @@ jobs:
         fi
         echo "::set-output name=tag::${tag}"
 
+    - name: Generate Package Receipts
+      id: receipts
+      run: |
+        scripts/receipts.sh --build-archive build.oci \
+                            --run-archive run.oci \
+                            --build-receipt build-receipt.txt \
+                            --run-receipt run-receipt.txt
+        echo "::set-output name=build_receipt::build-receipt.txt"
+        echo "::set-output name=run_receipt::run-receipt.txt"
+
     - name: Create Release Notes
       id: notes
       # TODO: Switch repo name below
@@ -125,6 +140,16 @@ jobs:
               "path": "run.oci",
               "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-run.oci",
               "content_type": "application/gzip"
+            },
+            {
+              "path": "${{ steps.receipts.outputs.build_receipt }}",
+              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+              "content_type": "text/plain"
+            },
+            {
+              "path": "${{ steps.receipts.outputs.run_receipt }}",
+              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+              "content_type": "text/plain"
             }
           ]
 
