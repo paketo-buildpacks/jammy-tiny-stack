@@ -15,6 +15,8 @@ ADD files/passwd /tiny/etc/passwd
 ADD files/nsswitch.conf /tiny/etc/nsswitch.conf
 ADD files/group /tiny/etc/group
 
+RUN mkdir -p /tiny/var/lib/dpkg/status.d/
+
 RUN mkdir -p /tiny/tmp \
 # TODO: Investigate: Why do we set up a nonroot user?
     /tiny/home/nonroot \
