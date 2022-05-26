@@ -32,15 +32,12 @@ jobs:
     #   id: skip
     #   runs: |
     #     # TODO: Check event trigger and skip potentially
-    - name: Check USNs
+    - name: Get New USNs
       id: usns
-      # if: ${{ steps.skip.outputs.skip == "false" }}
-      run: |
-        if [[ "${{ github.event.inputs.version }}" == "" ]]; then
-          printf "::set-output name=usns::%s\n" '[{ "name": "Hello", "url" : "www.example.com", "description" : "World!" }, { "name": "Goodbye", "url" : "www.example.com", "description" : "Moon!" }]'
-        else
-          printf "::set-output name=usns::%s\n" '[{ "name": "Welcome", "url" : "www.example.com", "description" : "Sun!" }]'
-        fi
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/get-usns@main
+      with:
+        distribution: 'jammy'
 
     - name: File Issue
       if: ${{ failure() }}
