@@ -163,10 +163,11 @@ jobs:
     - name: Write USNs File
       id: write_usns
       run: |
-        jq . <<< '${{ needs.poll_usns.outputs.usns }}' > "${USNS_PATH}"
+        jq . <<< "${USNS}" > "${USNS_PATH}"
         echo "::set-output name=usns::${USNS_PATH}"
       env:
         USNS_PATH: "patched-usns.json"
+        USNS: ${{ needs.poll_usns.outputs.usns }}
 
     - name: Get Repository Name
       id: repo_name

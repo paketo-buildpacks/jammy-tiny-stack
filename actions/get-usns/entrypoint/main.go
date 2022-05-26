@@ -96,7 +96,7 @@ func main() {
 		output = []byte(`[]`)
 	}
 
-	fmt.Printf("::set-output name=usns::'%s'\n", string(output))
+	fmt.Printf("::set-output name=usns::%s\n", string(output))
 
 	if config.Output != "" {
 		path, err := filepath.Abs(config.Output)
