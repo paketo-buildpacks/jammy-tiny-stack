@@ -88,7 +88,7 @@ func main() {
 	filtered := filterUSNsByPackages(newUSNs, packages)
 
 	if len(filtered) == 0 {
-		fmt.Printf("::set-output name=usns::%s\n", `[]`)
+		fmt.Printf(`::set-output name=usns::"%s"\n`, `[]`)
 		os.Exit(0)
 	}
 
@@ -278,7 +278,7 @@ func getCVEDescription(url string) (string, error) {
 	desc := re.FindStringSubmatch(body)
 	if len(desc) >= 2 {
 		description := desc[1]
-		return strings.TrimSpace(strings.ReplaceAll(description, `'`, `\'`)), nil
+		return strings.TrimSpace(description), nil
 	}
 
 	return "", nil
