@@ -6,7 +6,6 @@ description: |
 outputs:
   release_body:
     description: Generated detailed release notes for the stack
-    value: ${{ steps.release-notes.outputs.release_body }}
 
 inputs:
   build_image:
