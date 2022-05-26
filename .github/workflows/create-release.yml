@@ -174,7 +174,7 @@ jobs:
         # Strip off the org and slash from repo name
         # paketo-buildpacks/repo-name --> repo-name
         repo=$(echo "${full}" | sed 's/^.*\///')
-        echo "::set-output repo_name=${repo}"
+        echo "::set-output name=repo_name::${repo}"
 
     - name: Create Release
       uses: paketo-buildpacks/github-config/actions/release/create@main
