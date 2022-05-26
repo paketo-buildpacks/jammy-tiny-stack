@@ -87,16 +87,16 @@ func main() {
 
 	filtered := filterUSNsByPackages(newUSNs, packages)
 
-	if len(filtered) == 0 {
-		fmt.Printf(`::set-output name=usns::"%s"\n`, `[]`)
-		os.Exit(0)
-	}
-
 	output, err := json.Marshal(filtered)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("::set-output name=usns::%s\n", string(output))
+
+	if len(filtered) == 0 {
+		output = []byte(`[]`)
+	}
+
+	fmt.Printf("::set-output name=usns::'%s'\n", string(output))
 
 	if config.Output != "" {
 		path, err := filepath.Abs(config.Output)
