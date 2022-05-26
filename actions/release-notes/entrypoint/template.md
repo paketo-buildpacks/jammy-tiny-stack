@@ -5,7 +5,7 @@ Run: `{{- .RunImage -}}`
 
 ## Patched USNs
 {{ range .PatchedArray }}
-- [{{- .Name -}}]({{- .URL -}}): {{ .Description -}}
+- [{{- .Title -}}]({{- .URL -}})
 {{- end }}
 {{- end }}
 

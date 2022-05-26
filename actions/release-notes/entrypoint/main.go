@@ -15,10 +15,9 @@ import (
 //go:embed template.md
 var tString string
 
-type usn struct {
-	Name        string
-	URL         string
-	Description string
+type USN struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
 }
 
 func main() {
@@ -28,7 +27,7 @@ func main() {
 		BuildDiff    string
 		RunDiff      string
 		Patched      string
-		PatchedArray []usn
+		PatchedArray []USN
 	}
 
 	flag.StringVar(&config.BuildImage, "build-image", "", "Registry location of stack build image")
