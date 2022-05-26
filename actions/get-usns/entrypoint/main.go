@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -39,6 +40,7 @@ func main() {
 	var config struct {
 		Distro       string
 		LastUSNsJSON string
+		Output       string
 		PackagesJSON string
 		RSSURL       string
 	}
@@ -59,6 +61,10 @@ func main() {
 		"distro",
 		`bionic`,
 		"Name of Ubuntu distro: jammy, bionic")
+	flag.StringVar(&config.Output,
+		"output",
+		"",
+		"Path to output JSON file")
 
 	flag.Parse()
 
@@ -91,6 +97,17 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("::set-output name=usns::%s\n", string(output))
+
+	if config.Output != "" {
+		path, err := filepath.Abs(config.Output)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = os.WriteFile(path, output, os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
@@ -261,7 +278,7 @@ func getCVEDescription(url string) (string, error) {
 	desc := re.FindStringSubmatch(body)
 	if len(desc) >= 2 {
 		description := desc[1]
-		return strings.TrimSpace(description), nil
+		return strings.TrimSpace(strings.ReplaceAll(description, `'`, `\'`)), nil
 	}
 
 	return "", nil
