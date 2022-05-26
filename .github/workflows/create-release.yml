@@ -161,10 +161,19 @@ jobs:
     - name: Write USNs File
       id: write_usns
       run: |
-        jq . <<< ${{ needs.poll_usns.outputs.usns }} > "${USNS_PATH}"
+        jq . <<< '${{ needs.poll_usns.outputs.usns }}' > "${USNS_PATH}"
         echo "::set-output name=usns::${USNS_PATH}"
       env:
         USNS_PATH: "patched-usns.json"
+
+    - name: Get Repository Name
+      id: repo_name
+      run: |
+        full=${{ github.repository }}
+        # Strip off the org and slash from repo name
+        # paketo-buildpacks/repo-name --> repo-name
+        repo=$(echo "${full}" | sed 's/^.*\///')
+        echo "::set-output repo_name=${repo}"
 
     - name: Create Release
       uses: paketo-buildpacks/github-config/actions/release/create@main
@@ -176,32 +185,31 @@ jobs:
         name: v${{ steps.tag.outputs.tag }}
         body: ${{ steps.notes.outputs.release_body }}
         draft: false
-        # TODO: Check that github.event.repo.name is nonempty when adding to the release?
         assets: |
           [
             {
               "path": "build.oci",
-              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-build.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
               "content_type": "application/gzip"
             },
             {
               "path": "run.oci",
-              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-run.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
               "content_type": "application/gzip"
             },
             {
               "path": "${{ steps.receipts.outputs.build_receipt }}",
-              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
               "content_type": "text/plain"
             },
             {
               "path": "${{ steps.receipts.outputs.run_receipt }}",
-              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
               "content_type": "text/plain"
             },
             {
               "path": "${{ steps.write_usns.outputs.usns }}",
-              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
               "content_type": "text/plain"
             }
           ]
