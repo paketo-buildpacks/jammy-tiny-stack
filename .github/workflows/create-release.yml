@@ -36,7 +36,11 @@ jobs:
       id: usns
       # if: ${{ steps.skip.outputs.skip == "false" }}
       run: |
-        printf "::set-output name=usns::%s\n" '[{ "name": "Hello", "url" : "www.example.com", "description" : "World!" }, { "name": "Goodbye", "url" : "www.example.com", "description" : "Moon!" }]'
+        if [[ "${{ github.event.inputs.version }}" == "" ]]; then
+          printf "::set-output name=usns::%s\n" '[{ "name": "Hello", "url" : "www.example.com", "description" : "World!" }, { "name": "Goodbye", "url" : "www.example.com", "description" : "Moon!" }]'
+        else
+          printf "::set-output name=usns::%s\n" '[{ "name": "Welcome", "url" : "www.example.com", "description" : "Sun!" }]'
+        fi
 
     - name: File Issue
       if: ${{ failure() }}
