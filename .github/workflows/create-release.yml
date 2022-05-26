@@ -158,6 +158,14 @@ jobs:
         run_receipt_diff: "- something else"
         patched_usns: ${{ needs.poll_usns.outputs.usns }}
 
+    - name: Write USNs File
+      id: write_usns
+      run: |
+        jq . <<< ${{ needs.poll_usns.outputs.usns }} > "${USNS_PATH}"
+        echo "::set-output name=usns::${USNS_PATH}"
+      env:
+        USNS_PATH: "patched-usns.json"
+
     - name: Create Release
       uses: paketo-buildpacks/github-config/actions/release/create@main
       with:
@@ -168,6 +176,7 @@ jobs:
         name: v${{ steps.tag.outputs.tag }}
         body: ${{ steps.notes.outputs.release_body }}
         draft: false
+        # TODO: Check that github.event.repo.name is nonempty when adding to the release?
         assets: |
           [
             {
@@ -189,8 +198,14 @@ jobs:
               "path": "${{ steps.receipts.outputs.run_receipt }}",
               "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
               "content_type": "text/plain"
+            },
+            {
+              "path": "${{ steps.write_usns.outputs.usns }}",
+              "name": "${{ github.event.repository.name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
+              "content_type": "text/plain"
             }
           ]
+          # TODO: Maybe add a step after that validates the release assets?
 
     - name: File Issue
       if: ${{ failure() }}
