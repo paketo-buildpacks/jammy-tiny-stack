@@ -29,7 +29,7 @@ runs:
       #!/usr/bin/env bash
       set -euo pipefail
 
-      if [[ -n "${GITHUB_TOKEN}" ]]; then
+      if [[ -z "${GITHUB_TOKEN}" ]]; then
         echo "Must set \$GITHUB_TOKEN"
         exit 1
       fi
