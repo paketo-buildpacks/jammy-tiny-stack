@@ -27,14 +27,14 @@ runs:
       build=$(awk '{if ($1 == "ii" ) print $2}' <<< "${{ inputs.build_receipt }}" | sed -E 's/\:.*$//g')
       run=$(awk '{if ($1 == "ii" ) print $2}' <<< "${{ inputs.run_receipt }}" | sed -E 's/\:.*$//g')
 
-      packages=$(jq --null-input '[]')
+      packages=$(jq --null-input --compact-output '[]')
 
       while IFS= read -r pkg; do
-        packages=$(echo "${packages}" | jq --arg "p" "${pkg}" '. += [$p]')
+        packages=$(echo "${packages}" | jq --compact-output --arg "p" "${pkg}" '. += [$p]')
       done <<< "${build}"
 
       while IFS= read -r pkg; do
-        packages=$(echo "${packages}" | jq --arg "p" "${pkg}" '. += [$p]')
+        packages=$(echo "${packages}" | jq --compact-output --arg "p" "${pkg}" '. += [$p]')
       done <<< "${run}"
 
       printf "::set-output name=packages::%s\n" "${packages}"
