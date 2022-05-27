@@ -70,15 +70,19 @@ func main() {
 	flag.Parse()
 
 	var lastUSNs []USN
-	err := json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
-	if err != nil {
-		log.Fatal(err)
+	if config.LastUSNsJSON != "" {
+		err := json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	var packages []string
-	err = json.Unmarshal([]byte(config.PackagesJSON), &packages)
-	if err != nil {
-		log.Fatal(err)
+	if config.PackagesJSON != "" {
+		err := json.Unmarshal([]byte(config.PackagesJSON), &packages)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, distroToVersionRegex[config.Distro])
