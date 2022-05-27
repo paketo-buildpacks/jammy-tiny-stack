@@ -7,6 +7,8 @@ Run: `{{- .RunImage -}}`
 {{ range .PatchedArray }}
 - [{{- .Title -}}]({{- .URL -}})
 {{- end }}
+{{- else }}
+No USNs patched in this release.
 {{- end }}
 
 ## Build Package Diff

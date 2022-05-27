@@ -32,35 +32,27 @@ jobs:
     #   id: skip
     #   runs: |
     #     # TODO: Check event trigger and skip potentially
+    - name: Download Previous Build Receipt
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      with:
+        url: "https://github.com/fg-j/jammy-tiny-stack/releases/download/v0.0.11/jammy-tiny-stack-0.0.11-build-receipt.txt"
+        output: "${{ github.workspace }}/build-receipt.txt"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Download Previous Run Receipt
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      with:
+        url: "https://github.com/fg-j/jammy-tiny-stack/releases/download/v0.0.11/jammy-tiny-stack-0.0.11-run-receipt.txt"
+        output: "${{ github.workspace }}/run-receipt.txt"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
     - name: Get Package List
       id: packages
       # TODO: Switch repo name below
       uses: fg-j/jammy-tiny-stack/actions/generate-package-list@main
       with:
-        build_receipt: |
-          ii  adduser                   3.118ubuntu5                            all          add and remove users and groups
-          ii  apt                       2.4.5                                   amd64        commandline package manager
-          ii  base-files                12ubuntu4.1                             amd64        Debian base system miscellaneous files
-          ii  base-passwd               3.5.52build1                            amd64        Debian base system master password and group files
-          ii  bash                      5.1-6ubuntu1                            amd64        GNU Bourne Again SHell
-          ii  binutils                  2.38-3ubuntu1                           amd64        GNU assembler, linker and binary utilities
-          ii  binutils-common:amd64     2.38-3ubuntu1                           amd64        Common files for the GNU assembler, linker and binary utilities
-          ii  binutils-x86-64-linux-gnu 2.38-3ubuntu1                           amd64        GNU binary utilities, for x86-64-linux-gnu target
-          ii  bsdutils                  1:2.37.2-4ubuntu3                       amd64        basic utilities from 4.4BSD-Lite
-          ii  build-essential           12.9ubuntu3                             amd64        Informational list of build-essential packages
-          ii  bzip2                     1.0.8-5build1                           amd64        high-quality block-sorting file compressor - utilities
-
-        run_receipt: |
-          +++-===================================-===================================-===================================
-          ii  base-files                          12ubuntu4.1                         amd64
-          ii  ca-certificates                     20211016                            all
-          ii  libc6                               2.35-0ubuntu3                       amd64
-          ii  libssl3                             3.0.2-0ubuntu1.2                    amd64
-          ii  netbase                             6.3                                 all
-          ii  openssl                             3.0.2-0ubuntu1.2                    amd64
-          ii  tzdata                              2022a-0ubuntu1                      all
-          ii  zlib1g                              1:1.2.11.dfsg-2ubuntu9              amd64
-
+        build_receipt: "${{ github.workspace }}/build-receipt.txt"
+        run_receipt: "${{ github.workspace }}/run-receipt.txt"
     - name: Get New USNs
       id: usns
       # TODO: Switch repo name below
