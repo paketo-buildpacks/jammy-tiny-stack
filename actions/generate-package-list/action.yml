@@ -37,4 +37,4 @@ runs:
         packages=$(echo "${packages}" | jq -r --arg "p" "${pkg}" '. += [$p]')
       done <<< "${run}"
 
-      echo "::set-output name=packages::${packages}"
+      printf "::set-output name=packages::%s\n" "${packages}"
