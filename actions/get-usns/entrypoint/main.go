@@ -44,6 +44,7 @@ func main() {
 		PackagesJSON string
 		RSSURL       string
 	}
+	// TODO: Add some tests :D
 
 	flag.StringVar(&config.LastUSNsJSON,
 		"last-usns",
