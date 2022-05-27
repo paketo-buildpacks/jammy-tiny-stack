@@ -36,14 +36,14 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: "https://github.com/fg-j/jammy-tiny-stack/releases/download/v0.0.11/jammy-tiny-stack-0.0.11-build-receipt.txt"
-        output: "${{ github.workspace }}/build-receipt.txt"
+        output: "/github/workspace/build-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Download Previous Run Receipt
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: "https://github.com/fg-j/jammy-tiny-stack/releases/download/v0.0.11/jammy-tiny-stack-0.0.11-run-receipt.txt"
-        output: "${{ github.workspace }}/run-receipt.txt"
+        output: "/github/workspace/run-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Get Package List
