@@ -32,27 +32,51 @@ jobs:
     #   id: skip
     #   runs: |
     #     # TODO: Check event trigger and skip potentially
+    - name: Find Previous Build Receipt
+      id: build_receipt
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+      with:
+        asset_pattern: "build-receipt.txt"
+        search_depth: 1
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Find Previous Run Receipt
+      id: run_receipt
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+      with:
+        asset_pattern: "run-receipt.txt"
+        search_depth: 1
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
     - name: Download Previous Build Receipt
+      if: ${{ steps.build_receipt.outputs.url != "" }}
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
-        url: "https://github.com/fg-j/jammy-tiny-stack/releases/download/v0.0.11/jammy-tiny-stack-0.0.11-build-receipt.txt"
+        url: ${{ steps.build_receipt.outputs.url }}
         output: "/github/workspace/build-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Download Previous Run Receipt
+      if: ${{ steps.run_receipt.outputs.url != "" }}
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
-        url: "https://github.com/fg-j/jammy-tiny-stack/releases/download/v0.0.11/jammy-tiny-stack-0.0.11-run-receipt.txt"
+        url: ${{ steps.run_receipt.outputs.url }}
         output: "/github/workspace/run-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Get Package List
       id: packages
       # TODO: Switch repo name below
+      if: ${{ steps.build_receipt.outputs.url != "" && steps.run_receipt.outputs.url != "" }}
       uses: fg-j/jammy-tiny-stack/actions/generate-package-list@main
       with:
         build_receipt: "${{ github.workspace }}/build-receipt.txt"
         run_receipt: "${{ github.workspace }}/run-receipt.txt"
+
     - name: Get New USNs
       id: usns
       # TODO: Switch repo name below
