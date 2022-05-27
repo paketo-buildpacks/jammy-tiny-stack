@@ -53,7 +53,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Download Previous Build Receipt
-      if: ${{ steps.build_receipt.outputs.url != "" }}
+      if: ${{ steps.build_receipt.outputs.url != '' }}
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: ${{ steps.build_receipt.outputs.url }}
@@ -61,7 +61,7 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Download Previous Run Receipt
-      if: ${{ steps.run_receipt.outputs.url != "" }}
+      if: ${{ steps.run_receipt.outputs.url != '' }}
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: ${{ steps.run_receipt.outputs.url }}
@@ -71,7 +71,7 @@ jobs:
     - name: Get Package List
       id: packages
       # TODO: Switch repo name below
-      if: ${{ steps.build_receipt.outputs.url != "" && steps.run_receipt.outputs.url != "" }}
+      if: ${{ steps.build_receipt.outputs.url != '' && steps.run_receipt.outputs.url != '' }}
       uses: fg-j/jammy-tiny-stack/actions/generate-package-list@main
       with:
         build_receipt: "${{ github.workspace }}/build-receipt.txt"
