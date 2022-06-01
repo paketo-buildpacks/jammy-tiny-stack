@@ -1,9 +1,9 @@
 ## Images
 Build: `{{- .BuildImage -}}`
 Run: `{{- .RunImage -}}`
-{{- if ne (len .PatchedArray) 0 }}
 
 ## Patched USNs
+{{- if ne (len .PatchedArray) 0 }}
 {{ range .PatchedArray }}
 - [{{- .Title -}}]({{- .URL -}})
 {{- end }}
