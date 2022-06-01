@@ -142,15 +142,17 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 		return nil, fmt.Errorf("error parsing rss feed: %w", err)
 	}
 
-	fmt.Println("Latest USNs:")
+	fmt.Println("Looking for new USNs:")
 	var feedUSNs []USN
 	for _, item := range feed.Items {
-		fmt.Println(item.Title)
 		if (len(lastUSNs) > 0) && item.Title == lastUSNs[0].Title {
 			// We've already seen this USN
 			// No need to keep adding to list
+
+			fmt.Println("No more new USNs.")
 			break
 		}
+		fmt.Printf("New USN found: %s\n", item.Title)
 
 		usnURL, err := url.Parse(item.Link)
 		if err != nil {
