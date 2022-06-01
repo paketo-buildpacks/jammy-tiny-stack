@@ -35,6 +35,7 @@ jobs:
       with:
         asset_pattern: "build-receipt.txt"
         search_depth: 1
+        repo: ${{ github.repository }}
       env:
         GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
@@ -45,6 +46,7 @@ jobs:
       with:
         asset_pattern: "run-receipt.txt"
         search_depth: 1
+        repo: ${{ github.repository }}
       env:
         GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
@@ -80,6 +82,7 @@ jobs:
       with:
         asset_pattern: "patched-usns.json"
         search_depth: "-1"   # Search all releases
+        repo: ${{ github.repository }}
       env:
         GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 

@@ -4,6 +4,9 @@ description: |
   inputted glob. Requires $GITHUB_TOKEN environment variable to be set
 
 inputs:
+  repo:
+    description: 'Repository whose assets to search'
+    required: true
   asset_pattern:
     description: 'Name/regular expression matching desired asset file'
     required: true
@@ -21,42 +24,14 @@ outputs:
     value: ${{ steps.asset.outputs.url }}
 
 runs:
-  using: 'composite'
-  steps:
-  - id: asset
-    shell: bash
-    run: |
-      #!/usr/bin/env bash
-      set -euo pipefail
-
-      if [[ -z "${GITHUB_TOKEN}" ]]; then
-        echo "Must set \$GITHUB_TOKEN"
-        exit 1
-      fi
-
-      gh auth status
-
-      if [[ "${{ inputs.search_depth }}" != "-1" ]]; then
-        url=$(gh api repos/fg-j/jammy-tiny-stack/releases \
-          --method GET \
-          --field per_page="${{ inputs.search_depth }}" \
-          | jq -r --arg pattern "{{ inputs.asset_pattern }}" \
-          '[ .[].assets | .[] | select( .name | test($pattern) ) | .browser_download_url ][0]')
-      else
-        url=$(gh api repos/fg-j/jammy-tiny-stack/releases \
-          --method GET \
-          --paginate \
-          | jq -r --arg pattern "{{ inputs.asset_pattern }}" \
-          '[ .[].assets | .[] | select( .name | test($pattern) ) | .browser_download_url ][0]')
-      fi
-
-      if [[ "${url}" == "null" ]]; then
-          if [[ "${{ inputs.strict }}" == "true" ]]; then
-            echo "No matching asset found."
-            exit 1
-          fi
-        url=""
-      fi
-      echo "Asset URL is: " "${url}"
-
-      printf "::set-output name=url::%s\n" "${url}"
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--repo"
+  - "${{ inputs.repo }}"
+  - "--depth"
+  - "${{ inputs.search_depth }}"
+  - "--pattern"
+  - "${{ inputs.asset_pattern }}"
+  - "--strict"
+  - "${{ inputs.strict }}"
