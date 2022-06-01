@@ -297,7 +297,7 @@ jobs:
           ]
 
     - name: Create Release (without patched USNs)
-      if: ${{ steps.write_usns.outputs.usns != '' }}
+      if: ${{ steps.write_usns.outputs.usns == '' }}
       uses: paketo-buildpacks/github-config/actions/release/create@main
       with:
         repo: ${{ github.repository }}

@@ -57,5 +57,6 @@ runs:
           fi
         url=""
       fi
+      echo "Asset URL is: " "${url}"
 
       printf "::set-output name=url::%s\n" "${url}"
