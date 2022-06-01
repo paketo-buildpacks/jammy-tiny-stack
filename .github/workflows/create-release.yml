@@ -73,6 +73,32 @@ jobs:
         build_receipt: "${{ github.workspace }}/build-receipt.txt"
         run_receipt: "${{ github.workspace }}/run-receipt.txt"
 
+    - name: Find Previous Patched USNs
+      id: patched_json
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+      with:
+        asset_pattern: "patched-usns.json"
+        search_depth: "-1"   # Search all releases
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Download Previous Patched USNs
+      if: ${{ steps.patched_json.outputs.url != '' }}
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      with:
+        url: ${{ steps.patched_json.outputs.url }}
+        output: "/github/workspace/patched-usns.json"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Output Patched USNs as JSON String
+      id: patched
+      # TODO: Switch repo name below
+      if: ${{ steps.patched_json.outputs.url != '' }}
+      run: |
+        patched=$( cat "${GITHUB_WORKSPACE}/patched-usns.json" | jq --compact-output . )
+        printf "::set-output name=patched::%s\n" "${patched}"
+
     - name: Get New USNs
       id: usns
       # TODO: Switch repo name below
@@ -80,6 +106,7 @@ jobs:
       with:
         distribution: 'jammy'
         packages: ${{ steps.packages.outputs.packages }}
+        last_usns: ${{ steps.patched.outputs.patched }}
 
     - name: File Issue
       if: ${{ failure() }}
@@ -114,20 +141,20 @@ jobs:
       # Diff USNs with latest known USN
       # Only keep going if on push/manual trigger or there's a USNs diff
 
-    - name: Run Acceptance Tests
-      run: ./scripts/test.sh --clean
+    # - name: Run Acceptance Tests
+    #   run: ./scripts/test.sh --clean
 
-    - name: Upload Build Image
-      uses: actions/upload-artifact@v3
-      with:
-        name: build-image
-        path: build/build.oci
+    # - name: Upload Build Image
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: build-image
+    #     path: build/build.oci
 
-    - name: Upload Run Image
-      uses: actions/upload-artifact@v3
-      with:
-        name: run-image
-        path: build/run.oci
+    # - name: Upload Run Image
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: run-image
+    #     path: build/run.oci
 
     - name: File Issue
       if: ${{ failure() }}
@@ -155,17 +182,17 @@ jobs:
       with:
         fetch-depth: 0  # gets full history
 
-    - name: Download Build Image
-      id: download-build
-      uses: actions/download-artifact@v3
-      with:
-        name: build-image
+    # - name: Download Build Image
+    #   id: download-build
+    #   uses: actions/download-artifact@v3
+    #   with:
+    #     name: build-image
 
-    - name: Download Run Image
-      id: download-run
-      uses: actions/download-artifact@v3
-      with:
-        name: run-image
+    # - name: Download Run Image
+    #   id: download-run
+    #   uses: actions/download-artifact@v3
+    #   with:
+    #     name: run-image
 
     - name: Increment Tag
       if: github.event.inputs.version == ''
@@ -181,15 +208,15 @@ jobs:
         fi
         echo "::set-output name=tag::${tag}"
 
-    - name: Generate Package Receipts
-      id: receipts
-      run: |
-        scripts/receipts.sh --build-archive "${{ steps.download-build.outputs.download-path }}/build.oci" \
-                            --run-archive "${{ steps.download-run.outputs.download-path }}/run.oci" \
-                            --build-receipt build-receipt.txt \
-                            --run-receipt run-receipt.txt
-        echo "::set-output name=build_receipt::build-receipt.txt"
-        echo "::set-output name=run_receipt::run-receipt.txt"
+    # - name: Generate Package Receipts
+    #   id: receipts
+    #   run: |
+    #     scripts/receipts.sh --build-archive "${{ steps.download-build.outputs.download-path }}/build.oci" \
+    #                         --run-archive "${{ steps.download-run.outputs.download-path }}/run.oci" \
+    #                         --build-receipt build-receipt.txt \
+    #                         --run-receipt run-receipt.txt
+    #     echo "::set-output name=build_receipt::build-receipt.txt"
+    #     echo "::set-output name=run_receipt::run-receipt.txt"
 
     - name: Create Release Notes
       id: notes
@@ -204,6 +231,7 @@ jobs:
 
     - name: Write USNs File
       id: write_usns
+      if: ${{ needs.poll_usns.outputs.usns != '[]'  }}
       run: |
         jq . <<< "${USNS}" > "${USNS_PATH}"
         echo "::set-output name=usns::${USNS_PATH}"
@@ -220,7 +248,8 @@ jobs:
         repo=$(echo "${full}" | sed 's/^.*\///')
         echo "::set-output name=repo_name::${repo}"
 
-    - name: Create Release
+    - name: Create Release (with patched USNs)
+      if: ${{ steps.write_usns.outputs.usns != '' }}
       uses: paketo-buildpacks/github-config/actions/release/create@main
       with:
         repo: ${{ github.repository }}
@@ -230,29 +259,36 @@ jobs:
         name: v${{ steps.tag.outputs.tag }}
         body: ${{ steps.notes.outputs.release_body }}
         draft: false
-        # TODO: Maybe add a step after that validates the release assets?
+        # assets: |
+        #   [
+        #     {
+        #       "path": "build.oci",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
+        #       "content_type": "application/gzip"
+        #     },
+        #     {
+        #       "path": "run.oci",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
+        #       "content_type": "application/gzip"
+        #     },
+        #     {
+        #       "path": "${{ steps.receipts.outputs.build_receipt }}",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+        #       "content_type": "text/plain"
+        #     },
+        #     {
+        #       "path": "${{ steps.receipts.outputs.run_receipt }}",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+        #       "content_type": "text/plain"
+        #     },
+        #     {
+        #       "path": "${{ steps.write_usns.outputs.usns }}",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
+        #       "content_type": "text/plain"
+        #     }
+        #   ]
         assets: |
           [
-            {
-              "path": "build.oci",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
-              "content_type": "application/gzip"
-            },
-            {
-              "path": "run.oci",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
-              "content_type": "application/gzip"
-            },
-            {
-              "path": "${{ steps.receipts.outputs.build_receipt }}",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
-              "content_type": "text/plain"
-            },
-            {
-              "path": "${{ steps.receipts.outputs.run_receipt }}",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
-              "content_type": "text/plain"
-            },
             {
               "path": "${{ steps.write_usns.outputs.usns }}",
               "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
@@ -260,6 +296,42 @@ jobs:
             }
           ]
 
+    - name: Create Release (without patched USNs)
+      if: ${{ steps.write_usns.outputs.usns != '' }}
+      uses: paketo-buildpacks/github-config/actions/release/create@main
+      with:
+        repo: ${{ github.repository }}
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        tag_name: v${{ steps.tag.outputs.tag }}
+        target_commitish: ${{ github.sha }}
+        name: v${{ steps.tag.outputs.tag }}
+        body: ${{ steps.notes.outputs.release_body }}
+        draft: false
+        # assets: |
+        #   [
+        #     {
+        #       "path": "build.oci",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
+        #       "content_type": "application/gzip"
+        #     },
+        #     {
+        #       "path": "run.oci",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
+        #       "content_type": "application/gzip"
+        #     },
+        #     {
+        #       "path": "${{ steps.receipts.outputs.build_receipt }}",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+        #       "content_type": "text/plain"
+        #     },
+        #     {
+        #       "path": "${{ steps.receipts.outputs.run_receipt }}",
+        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+        #       "content_type": "text/plain"
+        #     }
+        #   ]
+
+      # TODO: Maybe add a step after that validates the release assets?
     - name: File Issue
       if: ${{ failure() }}
       # TODO: Update this issue filing to flag USN failure
