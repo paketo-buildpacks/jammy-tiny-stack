@@ -156,23 +156,11 @@ jobs:
         output: "/github/workspace/previous_run_image.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
-    - name: Find Previous Run image 2
-      id: previous_run_image_2
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
-      with:
-        asset_pattern: "run.oci"
-        search_depth: -1 # TODO: this should be 1 once we regularly attach images to releases
-        repo: ${{ github.repository }}
-        strict: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download Previous Run image 2
+    - name: Download Previous Run image 2 (pretend current)
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
-        url: ${{ steps.previous_run_image_2.outputs.url }}
-        output: "/github/workspace/previous_run_image_2.oci"
+        url: ${{ steps.previous_run_image.outputs.url }}
+        output: "/github/workspace/pretend_current_run_image.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     # - name: Create stack
@@ -183,8 +171,8 @@ jobs:
       # TODO: Switch repo name below
       uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
       with:
-        previous_image: "/github/workspace/previous_run_image.oci"
-        image: "/github/workspace/previous_run_image_2.oci"
+        previous_image: "${{ github.workspace}}/previous_run_image.oci"
+        image: "${{ github.workspace }}/pretend_current_run_image.oci"
         # image: "build/run.oci"
 
   test:

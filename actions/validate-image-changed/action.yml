@@ -20,6 +20,7 @@ runs:
       #!/usr/bin/env bash
       set -euo pipefail
 
+      echo "GITHUB_WORKSPACE : $GITHUB_WORKSPACE"
       ls -al $GITHUB_WORKSPACE
 
       skopeo copy oci-archive://${{ inputs.image }} docker-daemon:current:latest
