@@ -20,18 +20,18 @@ runs:
       #!/usr/bin/env bash
       set -euo pipefail
 
-      echo "GITHUB_WORKSPACE : $GITHUB_WORKSPACE"
-      ls -al $GITHUB_WORKSPACE
-
       skopeo copy oci-archive://${{ inputs.image }} docker-daemon:current:latest
       skopeo copy oci-archive://${{ inputs.previous_image }} docker-daemon:previous:latest
 
-      docker run current:latest sleep
+      # There are very few executables available on all images. locale-check is one of them.
+      # We don't care what we run, we just want something that will exit 0
+
+      docker run current:latest locale-check some-locale
       current_id=$(docker ps -l --format {{.ID}})
       docker export -o /tmp/current.tgz $current_id
       docker rm $current_id
 
-      docker run previous:latest sleep
+      docker run previous:latest locale-check some-locale
       previous_id=$(docker ps -l --format {{.ID}})
       docker export -o /tmp/previous.tgz $previous_id
       docker rm $previous_id
