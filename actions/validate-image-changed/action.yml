@@ -20,14 +20,7 @@ runs:
       #!/usr/bin/env bash
       set -euo pipefail
 
-      sudo apt-get -y update
-      sudo apt-get -y install curl skopeo
-
-      # curl -fsSL https://get.docker.com -o get-docker.sh
-      # chmod +x ./get-docker.sh
-      # ./get-docker.sh
-
-      docker info
+      ls -al $GITHUB_WORKSPACE
 
       skopeo copy oci-archive://${{ inputs.image }} docker-daemon:current:latest
       skopeo copy oci-archive://${{ inputs.previous_image }} docker-daemon:previous:latest
