@@ -48,10 +48,15 @@ runs:
       tar -xf ../current.tgz
       cd ..
 
-      diff --no-dereference -q -r current-fs previous-fs
+      diff_content=$(diff --no-dereference -q -r current-fs previous-fs)
 
-      skopeo inspect oci-archive://${{ inputs.image }} | jq .Env
-      skopeo inspect oci-archive://${{ inputs.previous_image }} | jq .Env
+      current_env=$(skopeo inspect oci-archive://${{ inputs.image }} | jq .Env)
+      previous_env=$(skopeo inspect oci-archive://${{ inputs.previous_image }} | jq .Env)
 
-      skopeo inspect oci-archive://${{ inputs.image }} | jq ' .Labels | del(."io.buildpacks.stack.released")'
-      skopeo inspect oci-archive://${{ inputs.previous_image }} | jq ' .Labels | del(."io.buildpacks.stack.released") '
+      current_labels=$(skopeo inspect oci-archive://${{ inputs.image }} | jq ' .Labels | del(."io.buildpacks.stack.released")')
+      previous_labels=$(skopeo inspect oci-archive://${{ inputs.previous_image }} | jq ' .Labels | del(."io.buildpacks.stack.released") ')
+
+      if [ "$diff_content" == "" ] && [ "$current_env" == "$previous_env" ] && [ "$current_labels" == "$previous_labels" ]; then
+        echo "no differences found - exiting with error"
+        exit 1
+      fi
