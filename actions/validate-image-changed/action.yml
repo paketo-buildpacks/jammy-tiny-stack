@@ -1,0 +1,55 @@
+name: 'Validate Images Changed'
+
+description: 'Validates that the images are different from the previous build'
+
+inputs:
+  image:
+    description: 'Image'
+    required: true
+
+  previous_image:
+    description: 'Previous image'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+  - id: validate
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      apt-get -y update
+      apt-get -y install curl skopeo
+
+      # curl -fsSL https://get.docker.com -o get-docker.sh
+      # chmod +x ./get-docker.sh
+      # ./get-docker.sh
+
+      skopeo copy oci-archive:///${{ inputs.image }} docker-daemon:current:latest
+      skopeo copy oci-archive:///${{ inputs.previous_image }} docker-daemon:previous:latest
+
+      docker run current:latest sleep
+      current_id=$(docker ps -l --format {{.ID}})
+      docker export -o /tmp/current.tgz $current_id
+      docker rm $current_id
+
+      docker run previous:latest sleep
+      previous_id=$(docker ps -l --format {{.ID}})
+      docker export -o /tmp/previous.tgz $previous_id
+      docker rm $previous_id
+
+      cd /tmp
+
+      mkdir previous-fs
+      cd previous-fs
+      tar -xf ../previous.tgz
+      cd ..
+
+      mkdir current-fs
+      cd current-fs
+      tar -xf ../current.tgz
+      cd ..
+
+      diff --no-dereference -q -r current-fs previous-fs

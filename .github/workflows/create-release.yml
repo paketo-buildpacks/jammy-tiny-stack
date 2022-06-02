@@ -127,10 +127,49 @@ jobs:
         fi
         echo "${release_issue}"
 
-  test:
-    name: Acceptance Test
+  check_images:
+    name: Check Images
     needs: poll_usns
     if: ${{ needs.poll_usns.outputs.usns != '' || github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout/@v3
+
+      # TODO: check build image too.
+    - name: Find Previous Run image
+      id: previous_run_image
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+      with:
+        asset_pattern: "run.oci"
+        search_depth: -1 # TODO: this should be 1 once we regularly attach images to releases
+        repo: ${{ github.repository }}
+        strict: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Download Previous Run image
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      with:
+        url: ${{ steps.previous_run_image.outputs.url }}
+        output: "${{ github.workspace }}/previous_run_image.oci"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Create stack
+      run: ./scripts/create.sh
+
+    - name: Validate Run Image
+      id: packages
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
+      with:
+        previous_image: "${{ github.workspace }}/previous_run_image.oci"
+        image: "build/run.oci"
+
+  test:
+    name: Acceptance Test
+    needs: check_images
     runs-on: ubuntu-latest
     steps:
     - name: Setup Go
