@@ -165,7 +165,7 @@ jobs:
       uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
       with:
         previous_image: "${{ github.workspace}}/previous_run_image.oci"
-        image: "build/run.oci"
+        image: "${{ github.workspace }}/build/run.oci"
 
   test:
     name: Acceptance Test
