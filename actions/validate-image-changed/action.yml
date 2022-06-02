@@ -27,8 +27,10 @@ runs:
       # chmod +x ./get-docker.sh
       # ./get-docker.sh
 
-      skopeo copy oci-archive:///${{ inputs.image }} docker-daemon:current:latest
-      skopeo copy oci-archive:///${{ inputs.previous_image }} docker-daemon:previous:latest
+      docker info
+
+      skopeo copy oci-archive://${{ inputs.image }} docker-daemon:current:latest
+      skopeo copy oci-archive://${{ inputs.previous_image }} docker-daemon:previous:latest
 
       docker run current:latest sleep
       current_id=$(docker ps -l --format {{.ID}})
