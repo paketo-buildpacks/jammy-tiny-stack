@@ -156,15 +156,8 @@ jobs:
         output: "/github/workspace/previous_run_image.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
-    - name: Download Previous Run image 2 (pretend current)
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
-      with:
-        url: ${{ steps.previous_run_image.outputs.url }}
-        output: "/github/workspace/pretend_current_run_image.oci"
-        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    # - name: Create stack
-    #   run: ./scripts/create.sh
+    - name: Create stack
+      run: ./scripts/create.sh
 
     - name: Validate Run Image
       id: packages
@@ -172,8 +165,7 @@ jobs:
       uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
       with:
         previous_image: "${{ github.workspace}}/previous_run_image.oci"
-        image: "${{ github.workspace }}/pretend_current_run_image.oci"
-        # image: "build/run.oci"
+        image: "build/run.oci"
 
   test:
     name: Acceptance Test
