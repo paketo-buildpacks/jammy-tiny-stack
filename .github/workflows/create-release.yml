@@ -153,7 +153,7 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: ${{ steps.previous_run_image.outputs.url }}
-        output: "${{ github.workspace }}/previous_run_image.oci"
+        output: "/github/workspace/previous_run_image.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find Previous Run image 2
@@ -172,7 +172,7 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: ${{ steps.previous_run_image_2.outputs.url }}
-        output: "${{ github.workspace }}/previous_run_image_2.oci"
+        output: "/github/workspace/previous_run_image_2.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     # - name: Create stack
@@ -183,8 +183,8 @@ jobs:
       # TODO: Switch repo name below
       uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
       with:
-        previous_image: "${{ github.workspace }}/previous_run_image.oci"
-        image: "${{ github.workspace }}/previous_run_image_2.oci"
+        previous_image: "/github/workspace/previous_run_image.oci"
+        image: "/github/workspace/previous_run_image_2.oci"
         # image: "build/run.oci"
 
   test:
