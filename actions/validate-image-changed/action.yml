@@ -20,8 +20,8 @@ runs:
       #!/usr/bin/env bash
       set -euo pipefail
 
-      apt-get -y update
-      apt-get -y install curl skopeo
+      sudo apt-get -y update
+      sudo apt-get -y install curl skopeo
 
       # curl -fsSL https://get.docker.com -o get-docker.sh
       # chmod +x ./get-docker.sh
