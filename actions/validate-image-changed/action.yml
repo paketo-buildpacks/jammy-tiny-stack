@@ -49,3 +49,9 @@ runs:
       cd ..
 
       diff --no-dereference -q -r current-fs previous-fs
+
+      skopeo inspect oci-archive://${{ inputs.image }} | jq .Env
+      skopeo inspect oci-archive://${{ inputs.previous_image }} | jq .Env
+
+      skopeo inspect oci-archive://${{ inputs.image }} | jq ' .Labels | del(."io.buildpacks.stack.released")'
+      skopeo inspect oci-archive://${{ inputs.previous_image }} | jq ' .Labels | del(."io.buildpacks.stack.released") '
