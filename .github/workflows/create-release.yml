@@ -209,7 +209,7 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: ${{ steps.previous_build_image.outputs.url }}
-        output: "/github/workspace/previous_run_image.oci"
+        output: "/github/workspace/previous_build_image.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Download current build image
