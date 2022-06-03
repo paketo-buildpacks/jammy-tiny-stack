@@ -1,6 +1,6 @@
 name: 'Validate Images Changed'
 
-description: 'Validates that the images are different from the previous build'
+description: 'Validates that the images are different from those generated previously'
 
 inputs:
   image:
@@ -16,47 +16,7 @@ runs:
   steps:
   - id: validate
     shell: bash
-    run: |
-      #!/usr/bin/env bash
-      set -euo pipefail
-
-      skopeo copy oci-archive://${{ inputs.image }} docker-daemon:current:latest
-      skopeo copy oci-archive://${{ inputs.previous_image }} docker-daemon:previous:latest
-
-      # There are very few executables available on all images. locale-check is one of them.
-      # We don't care what we run, we just want something that will exit 0
-
-      docker run current:latest locale-check some-locale
-      current_id=$(docker ps -l --format {{.ID}})
-      docker export -o /tmp/current.tgz $current_id
-      docker rm $current_id
-
-      docker run previous:latest locale-check some-locale
-      previous_id=$(docker ps -l --format {{.ID}})
-      docker export -o /tmp/previous.tgz $previous_id
-      docker rm $previous_id
-
-      cd /tmp
-
-      mkdir previous-fs
-      cd previous-fs
-      tar -xf ../previous.tgz
-      cd ..
-
-      mkdir current-fs
-      cd current-fs
-      tar -xf ../current.tgz
-      cd ..
-
-      diff_content=$(diff --no-dereference -q -r current-fs previous-fs)
-
-      current_env=$(skopeo inspect oci-archive://${{ inputs.image }} | jq .Env)
-      previous_env=$(skopeo inspect oci-archive://${{ inputs.previous_image }} | jq .Env)
-
-      current_labels=$(skopeo inspect oci-archive://${{ inputs.image }} | jq ' .Labels | del(."io.buildpacks.stack.released")')
-      previous_labels=$(skopeo inspect oci-archive://${{ inputs.previous_image }} | jq ' .Labels | del(."io.buildpacks.stack.released") ')
-
-      if [ "$diff_content" == "" ] && [ "$current_env" == "$previous_env" ] && [ "$current_labels" == "$previous_labels" ]; then
-        echo "no differences found - exiting with error"
-        exit 1
-      fi
+    run: ${{ github.action_path }}/validate-images-changed
+    env:
+      IMAGE: ${{ inputs.image }}
+      PREVIOUS_IMAGE: ${{ inputs.previous_image }}

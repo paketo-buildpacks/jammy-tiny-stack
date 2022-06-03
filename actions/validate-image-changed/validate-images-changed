@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Current image: $IMAGE"
+echo "Previous image: $PREVIOUS_IMAGE"
+
+echo -n "Copying images to daemon... "
+skopeo copy --quiet oci-archive://$IMAGE docker-daemon:current:latest
+skopeo copy --quiet oci-archive://$PREVIOUS_IMAGE docker-daemon:previous:latest
+echo "done"
+
+# There are very few executables available on all images. locale-check is one of them.
+# We don't care what we run, we just want something that will exit 0
+
+echo -n "Exporting filesystems from images... "
+docker run current:latest locale-check some-locale
+current_id=$(docker ps -l --format {{.ID}})
+docker export -o /tmp/current.tgz $current_id
+docker rm -f $current_id > /dev/null
+
+docker run previous:latest locale-check some-locale
+previous_id=$(docker ps -l --format {{.ID}})
+docker export -o /tmp/previous.tgz $previous_id
+docker rm -f $previous_id > /dev/null
+echo "done"
+
+echo -n "Decompressing filesystems... "
+rm -rf /tmp/current-fs && mkdir /tmp/current-fs
+tar -xf /tmp/current.tgz -C /tmp/current-fs
+
+rm -rf /tmp/previous-fs && mkdir /tmp/previous-fs
+tar -xf /tmp/previous.tgz -C /tmp/previous-fs
+echo "done"
+
+echo -n "Comparing filesystems... "
+# Ignore error as diff will exit non-zero if there is a diff,
+# which is the opposite of what we want
+set +e
+diff_content=$(diff --no-dereference -q -r /tmp/current-fs /tmp/previous-fs)
+set -e
+echo "done"
+
+echo -n "Comparing labels... "
+current_env=$(skopeo inspect oci-archive://$IMAGE | jq .Env)
+previous_env=$(skopeo inspect oci-archive://$PREVIOUS_IMAGE | jq .Env)
+
+current_labels=$(skopeo inspect oci-archive://$IMAGE | jq ' .Labels | del(."io.buildpacks.stack.released")')
+previous_labels=$(skopeo inspect oci-archive://$PREVIOUS_IMAGE | jq ' .Labels | del(."io.buildpacks.stack.released") ')
+echo "done"
+
+echo ""
+echo "Filesystem diff:"
+echo "$diff_content"
+echo ""
+
+
+if [ "$current_env" == "$previous_env" ]; then
+  echo "Metadata environments are identical"
+else
+  echo "Metadata environments differ"
+fi
+echo "Current metadata environment: $current_env"
+echo "Previous metadata environment: $previous_env"
+echo ""
+
+if [ "$current_labels" == "$previous_labels" ]; then
+  echo "Metadata labels are identical"
+else
+  echo "Metadata labels differ"
+fi
+echo "current labels: $current_labels"
+echo "previous labels: $previous_labels"
+echo ""
+
+if [ "$diff_content" == "" ] && [ "$current_env" == "$previous_env" ] && [ "$current_labels" == "$previous_labels" ]; then
+  echo "no differences found - exiting with error"
+  exit 1
+fi
+
+echo "image is different - success"
