@@ -133,13 +133,18 @@ jobs:
     if: ${{ needs.poll_usns.outputs.usns != '' || github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout
+      uses: actions/checkout/@v3
+
     - name: Create stack
       run: ./scripts/create.sh
+
     - name: Upload run image
       uses: actions/upload-artifact@v3
       with:
         name: current-run-image
         path: build/run.oci
+
     - name: Upload build image
       uses: actions/upload-artifact@v3
       with:
@@ -151,9 +156,6 @@ jobs:
     needs: create_stack
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout/@v3
-
     - name: Find Previous Run image
       id: previous_run_image
       # TODO: Switch repo name below
@@ -191,9 +193,6 @@ jobs:
     needs: create_stack
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout/@v3
-
     - name: Find Previous Build image
       id: previous_build_image
       # TODO: Switch repo name below
