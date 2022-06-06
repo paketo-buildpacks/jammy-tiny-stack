@@ -9,10 +9,6 @@ on:
   push:
     branches:
     - main
-    paths:
-    - 'stack.toml'
-    - '**.Dockerfile'
-    - 'run/*'
   workflow_dispatch:
     inputs:
       version:
@@ -139,6 +135,16 @@ jobs:
     - name: Create stack
       run: ./scripts/create.sh
 
+    - name: Generate Package Receipts
+      id: receipts
+      run: |
+        scripts/receipts.sh --build-archive "build/build.oci" \
+                            --run-archive "build/run.oci" \
+                            --build-receipt build-receipt.txt \
+                            --run-receipt run-receipt.txt
+        echo "::set-output name=build_receipt::build-receipt.txt"
+        echo "::set-output name=run_receipt::run-receipt.txt"
+
     - name: Upload run image
       uses: actions/upload-artifact@v3
       with:
@@ -150,6 +156,72 @@ jobs:
       with:
         name: current-build-image
         path: build/build.oci
+
+    - name: Upload Build receipt
+      uses: actions/upload-artifact@v3
+      with:
+        name: current-build-receipt
+        path: ${{ steps.receipts.outputs.build_receipt }}
+
+    - name: Upload Run receipt
+      uses: actions/upload-artifact@v3
+      with:
+        name: current-run-receipt
+        path: ${{ steps.receipts.outputs.run_receipt }}
+
+  diff:
+    name: Diff Packages
+    needs: [ create_stack ]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Build Receipt
+      uses: actions/download-artifact@v3
+      with:
+        name: current-build-receipt
+
+    - name: Download Run Receipt
+      uses: actions/download-artifact@v3
+      with:
+        name: current-run-receipt
+
+    - name: Find Previous Build Receipt
+      id: previous_build
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+      with:
+        asset_pattern: "build-receipt.txt"
+        search_depth: 1
+        repo: ${{ github.repository }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Download Previous Build Receipt
+      if: ${{ steps.previous_build.outputs.url != '' }}
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      with:
+        url: ${{ steps.previous_build.outputs.url }}
+        output: "/github/workspace/previous-build-receipt.txt"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Find Previous Run Receipt
+      id: previous_run
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+      with:
+        asset_pattern: "run-receipt.txt"
+        search_depth: 1
+        repo: ${{ github.repository }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Download Previous Run Receipt
+      if: ${{ steps.previous_run.outputs.url != '' }}
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      with:
+        url: ${{ steps.previous_run.outputs.url }}
+        output: "/github/workspace/previous-run-receipt.txt"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
 
   validate_run_image:
     name: Validate Run Image
@@ -180,13 +252,13 @@ jobs:
       with:
         name: current-run-image
 
-    - name: Validate Run Image
-      id: packages
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
-      with:
-        previous_image: "${{ github.workspace}}/previous_run_image.oci"
-        image: "${{ github.workspace}}/run.oci"
+    # - name: Validate Run Image
+    #   id: packages
+    #   # TODO: Switch repo name below
+    #   uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
+    #   with:
+    #     previous_image: "${{ github.workspace}}/previous_run_image.oci"
+    #     image: "${{ github.workspace}}/run.oci"
 
   validate_build_image:
     name: Validate Build Image
@@ -217,13 +289,13 @@ jobs:
       with:
         name: current-build-image
 
-    - name: Validate Build Image
-      id: packages
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
-      with:
-        previous_image: "${{ github.workspace}}/previous_build_image.oci"
-        image: "${{ github.workspace}}/build.oci"
+    # - name: Validate Build Image
+    #   id: packages
+    #   # TODO: Switch repo name below
+    #   uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
+    #   with:
+    #     previous_image: "${{ github.workspace}}/previous_build_image.oci"
+    #     image: "${{ github.workspace}}/build.oci"
 
   test:
     name: Acceptance Test
@@ -238,23 +310,20 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-      # Diff USNs with latest known USN
-      # Only keep going if on push/manual trigger or there's a USNs diff
-
-    # - name: Run Acceptance Tests
-    #   run: ./scripts/test.sh --clean
-
-    # - name: Upload Build Image
+    # - name: Download Build Image
     #   uses: actions/upload-artifact@v3
     #   with:
     #     name: build-image
     #     path: build/build.oci
 
-    # - name: Upload Run Image
+    # - name: Download Run Image
     #   uses: actions/upload-artifact@v3
     #   with:
     #     name: run-image
     #     path: build/run.oci
+
+    # - name: Run Acceptance Tests
+    #   run: ./scripts/test.sh --clean
 
     - name: File Issue
       if: ${{ failure() }}
@@ -293,6 +362,16 @@ jobs:
       with:
         name: current-run-image
 
+    - name: Download Build Receipt
+      uses: actions/download-artifact@v3
+      with:
+        name: current-build-receipt
+
+    - name: Download Run Receipt
+      uses: actions/download-artifact@v3
+      with:
+        name: current-run-receipt
+
     - name: Increment Tag
       if: github.event.inputs.version == ''
       id: semver
@@ -306,16 +385,6 @@ jobs:
           tag="${{ steps.semver.outputs.tag }}"
         fi
         echo "::set-output name=tag::${tag}"
-
-    # - name: Generate Package Receipts
-    #   id: receipts
-    #   run: |
-    #     scripts/receipts.sh --build-archive "${{ steps.download-build.outputs.download-path }}/build.oci" \
-    #                         --run-archive "${{ steps.download-run.outputs.download-path }}/run.oci" \
-    #                         --build-receipt build-receipt.txt \
-    #                         --run-receipt run-receipt.txt
-    #     echo "::set-output name=build_receipt::build-receipt.txt"
-    #     echo "::set-output name=run_receipt::run-receipt.txt"
 
     - name: Write USNs File
       id: write_usns
@@ -358,34 +427,6 @@ jobs:
         name: v${{ steps.tag.outputs.tag }}
         body: ${{ steps.notes.outputs.release_body }}
         draft: false
-        # assets: |
-        #   [
-        #     {
-        #       "path": "build.oci",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
-        #       "content_type": "application/gzip"
-        #     },
-        #     {
-        #       "path": "run.oci",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
-        #       "content_type": "application/gzip"
-        #     },
-        #     {
-        #       "path": "${{ steps.receipts.outputs.build_receipt }}",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
-        #       "content_type": "text/plain"
-        #     },
-        #     {
-        #       "path": "${{ steps.receipts.outputs.run_receipt }}",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
-        #       "content_type": "text/plain"
-        #     },
-        #     {
-        #       "path": "${{ steps.write_usns.outputs.usns }}",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
-        #       "content_type": "text/plain"
-        #     }
-        #   ]
         assets: |
           [
             {
@@ -397,6 +438,16 @@ jobs:
               "path": "run.oci",
               "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
               "content_type": "application/gzip"
+            },
+            {
+              "path": "build-receipt.txt",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+              "content_type": "text/plain"
+            },
+            {
+              "path": "run-receipt.txt",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+              "content_type": "text/plain"
             },
             {
               "path": "${{ steps.write_usns.outputs.usns }}",
@@ -416,29 +467,6 @@ jobs:
         name: v${{ steps.tag.outputs.tag }}
         body: ${{ steps.notes.outputs.release_body }}
         draft: false
-        # assets: |
-        #   [
-        #     {
-        #       "path": "build.oci",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
-        #       "content_type": "application/gzip"
-        #     },
-        #     {
-        #       "path": "run.oci",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
-        #       "content_type": "application/gzip"
-        #     },
-        #     {
-        #       "path": "${{ steps.receipts.outputs.build_receipt }}",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
-        #       "content_type": "text/plain"
-        #     },
-        #     {
-        #       "path": "${{ steps.receipts.outputs.run_receipt }}",
-        #       "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
-        #       "content_type": "text/plain"
-        #     }
-        #   ]
         assets: |
           [
             {
@@ -450,6 +478,16 @@ jobs:
               "path": "run.oci",
               "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
               "content_type": "application/gzip"
+            },
+            {
+              "path": "build-receipt.txt",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+              "content_type": "text/plain"
+            },
+            {
+              "path": "run-receipt.txt",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+              "content_type": "text/plain"
             }
           ]
 

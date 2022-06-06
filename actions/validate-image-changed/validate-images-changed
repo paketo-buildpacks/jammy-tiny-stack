@@ -52,6 +52,8 @@ echo ""
 echo "Filesystem diff:"
 echo "$diff_content"
 echo ""
+# TODO: Do we need to exclude some files from filesystem diff? Maybe some always differ
+# between builds.
 
 
 if [ "$current_env" == "$previous_env" ]; then
