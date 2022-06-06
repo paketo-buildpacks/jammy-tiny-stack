@@ -283,17 +283,15 @@ jobs:
       with:
         fetch-depth: 0  # gets full history
 
-    # - name: Download Build Image
-    #   id: download-build
-    #   uses: actions/download-artifact@v3
-    #   with:
-    #     name: build-image
+    - name: Download current build image
+      uses: actions/download-artifact@v3
+      with:
+        name: current-build-image
 
-    # - name: Download Run Image
-    #   id: download-run
-    #   uses: actions/download-artifact@v3
-    #   with:
-    #     name: run-image
+    - name: Download current run image
+      uses: actions/download-artifact@v3
+      with:
+        name: current-run-image
 
     - name: Increment Tag
       if: github.event.inputs.version == ''
@@ -391,6 +389,16 @@ jobs:
         assets: |
           [
             {
+              "path": "build.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
+              "content_type": "application/gzip"
+            },
+            {
+              "path": "run.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
+              "content_type": "application/gzip"
+            },
+            {
               "path": "${{ steps.write_usns.outputs.usns }}",
               "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
               "content_type": "text/plain"
@@ -431,6 +439,19 @@ jobs:
         #       "content_type": "text/plain"
         #     }
         #   ]
+        assets: |
+          [
+            {
+              "path": "build.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
+              "content_type": "application/gzip"
+            },
+            {
+              "path": "run.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
+              "content_type": "application/gzip"
+            }
+          ]
 
       # TODO: Maybe add a step after that validates the release assets?
     - name: File Issue
