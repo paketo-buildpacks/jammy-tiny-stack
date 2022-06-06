@@ -24,76 +24,49 @@ jobs:
     outputs:
       usns: ${{ steps.usns.outputs.usns }}
     steps:
-    - name: Find Previous Build Receipt
-      id: build_receipt
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+    - name: Find and Download Previous Build Receipt
+      id: previous_build
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "build-receipt.txt"
         search_depth: 1
         repo: ${{ github.repository }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        output_path: "/github/workspace/build-receipt.txt"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
-    - name: Find Previous Run Receipt
-      id: run_receipt
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+    - name: Find and Download Previous Run Receipt
+      id: previous_run
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "run-receipt.txt"
         search_depth: 1
         repo: ${{ github.repository }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download Previous Build Receipt
-      if: ${{ steps.build_receipt.outputs.url != '' }}
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
-      with:
-        url: ${{ steps.build_receipt.outputs.url }}
-        output: "/github/workspace/build-receipt.txt"
-        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download Previous Run Receipt
-      if: ${{ steps.run_receipt.outputs.url != '' }}
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
-      with:
-        url: ${{ steps.run_receipt.outputs.url }}
-        output: "/github/workspace/run-receipt.txt"
+        output_path: "/github/workspace/run-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Get Package List
       id: packages
       # TODO: Switch repo name below
-      if: ${{ steps.build_receipt.outputs.url != '' && steps.run_receipt.outputs.url != '' }}
+      if: ${{ steps.previous_build.outputs.output_path != '' && steps.previous_run.outputs.output_path != '' }}
       uses: fg-j/jammy-tiny-stack/actions/generate-package-list@main
       with:
         build_receipt: "${{ github.workspace }}/build-receipt.txt"
         run_receipt: "${{ github.workspace }}/run-receipt.txt"
 
-    - name: Find Previous Patched USNs
-      id: patched_json
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+    - name: Find and Download Previous Patched USNs
+      id: download_patched
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "patched-usns.json"
         search_depth: "-1"   # Search all releases
         repo: ${{ github.repository }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download Previous Patched USNs
-      if: ${{ steps.patched_json.outputs.url != '' }}
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
-      with:
-        url: ${{ steps.patched_json.outputs.url }}
-        output: "/github/workspace/patched-usns.json"
+        output_path: "/github/workspace/patched-usns.json"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Output Patched USNs as JSON String
       id: patched
       # TODO: Switch repo name below
-      if: ${{ steps.patched_json.outputs.url != '' }}
+      if: ${{ steps.download_patched.outputs.output_path != '' }}
       run: |
         patched=$( cat "${GITHUB_WORKSPACE}/patched-usns.json" | jq --compact-output . )
         printf "::set-output name=patched::%s\n" "${patched}"
@@ -184,42 +157,22 @@ jobs:
       with:
         name: current-run-receipt
 
-    - name: Find Previous Build Receipt
-      id: previous_build
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+    - name: Find and Download Previous Build Receipt
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "build-receipt.txt"
         search_depth: 1
         repo: ${{ github.repository }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download Previous Build Receipt
-      if: ${{ steps.previous_build.outputs.url != '' }}
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
-      with:
-        url: ${{ steps.previous_build.outputs.url }}
-        output: "/github/workspace/previous-build-receipt.txt"
+        output_path: "/github/workspace/build-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
-    - name: Find Previous Run Receipt
-      id: previous_run
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+    - name: Find and Download Previous Run Receipt
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "run-receipt.txt"
         search_depth: 1
         repo: ${{ github.repository }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download Previous Run Receipt
-      if: ${{ steps.previous_run.outputs.url != '' }}
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
-      with:
-        url: ${{ steps.previous_run.outputs.url }}
-        output: "/github/workspace/previous-run-receipt.txt"
+        output_path: "/github/workspace/run-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
 
@@ -228,23 +181,14 @@ jobs:
     needs: create_stack
     runs-on: ubuntu-latest
     steps:
-    - name: Find Previous Run image
-      id: previous_run_image
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+    - name: Find and Download Previous Run Image
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "run.oci"
         search_depth: -1 # TODO: this should be 1 once we regularly attach images to releases
         repo: ${{ github.repository }}
         strict: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download Previous Run image
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
-      with:
-        url: ${{ steps.previous_run_image.outputs.url }}
-        output: "/github/workspace/previous_run_image.oci"
+        output_path: "/github/workspace/previous_run_image.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Download run image
@@ -265,23 +209,14 @@ jobs:
     needs: create_stack
     runs-on: ubuntu-latest
     steps:
-    - name: Find Previous Build image
-      id: previous_build_image
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+    - name: Find and Download Previous Build Image
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "build.oci"
         search_depth: -1 # TODO: this should be 1 once we regularly attach images to releases
         repo: ${{ github.repository }}
         strict: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download Previous Build image
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
-      with:
-        url: ${{ steps.previous_build_image.outputs.url }}
-        output: "/github/workspace/previous_build_image.oci"
+        output_path: "/github/workspace/previous_build_image.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Download current build image
