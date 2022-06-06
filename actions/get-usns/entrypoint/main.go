@@ -48,7 +48,7 @@ func main() {
 
 	flag.StringVar(&config.LastUSNsJSON,
 		"last-usns",
-		`[]`,
+		"",
 		"JSON array of last known USNs")
 	flag.StringVar(&config.RSSURL,
 		"feed-url",
@@ -56,7 +56,7 @@ func main() {
 		"URL of RSS feed")
 	flag.StringVar(&config.PackagesJSON,
 		"packages",
-		`[]`,
+		"",
 		"JSON array of relevant packages")
 	flag.StringVar(&config.Distro,
 		"distro",
@@ -69,20 +69,24 @@ func main() {
 
 	flag.Parse()
 
+	if config.LastUSNsJSON == "" {
+		config.LastUSNsJSON = `[]`
+	}
+
+	if config.PackagesJSON == "" {
+		config.PackagesJSON = `[]`
+	}
+
 	var lastUSNs []USN
-	if config.LastUSNsJSON != "" {
-		err := json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
-		if err != nil {
-			log.Fatal(err)
-		}
+	err := json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	var packages []string
-	if config.PackagesJSON != "" {
-		err := json.Unmarshal([]byte(config.PackagesJSON), &packages)
-		if err != nil {
-			log.Fatal(err)
-		}
+	err = json.Unmarshal([]byte(config.PackagesJSON), &packages)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, distroToVersionRegex[config.Distro])

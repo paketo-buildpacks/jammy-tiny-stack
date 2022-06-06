@@ -26,7 +26,7 @@ func main() {
 		RunImage     string
 		BuildDiff    string
 		RunDiff      string
-		Patched      string
+		PatchedJSON  string
 		PatchedArray []USN
 	}
 
@@ -34,10 +34,14 @@ func main() {
 	flag.StringVar(&config.RunImage, "run-image", "", "Registry location of stack run image")
 	flag.StringVar(&config.BuildDiff, "build-diff", "", "Diff of build image package receipt")
 	flag.StringVar(&config.RunDiff, "run-diff", "", "Diff of run image package receipt")
-	flag.StringVar(&config.Patched, "patched-usns", "[]", "JSON Array of patched USNs")
+	flag.StringVar(&config.PatchedJSON, "patched-usns", "", "JSON Array of patched USNs")
 	flag.Parse()
 
-	err := json.Unmarshal([]byte(config.Patched), &config.PatchedArray)
+	if config.PatchedJSON == "" {
+		config.PatchedJSON = `[]`
+	}
+
+	err := json.Unmarshal([]byte(config.PatchedJSON), &config.PatchedArray)
 	if err != nil {
 		log.Fatal(err)
 	}

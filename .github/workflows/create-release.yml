@@ -275,7 +275,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [test, validate_run_image, validate_build_image]
+    needs: [poll_usns, test, validate_run_image, validate_build_image]
     if: ${{ always() && needs.test.result == 'success' && (needs.validate_run_image.result == 'success' || needs.validate_build_image.result == 'success') }}
     steps:
     - name: Checkout With History
