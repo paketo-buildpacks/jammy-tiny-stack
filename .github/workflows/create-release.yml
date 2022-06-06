@@ -138,8 +138,8 @@ jobs:
     - name: Generate Package Receipts
       id: receipts
       run: |
-        scripts/receipts.sh --build-archive "build/build.oci" \
-                            --run-archive "build/run.oci" \
+        scripts/receipts.sh --build-archive "${GITHUB_WORKSPACE}/build/build.oci" \
+                            --run-archive "${GITHUB_WORKSPACE}/build/run.oci" \
                             --build-receipt build-receipt.txt \
                             --run-receipt run-receipt.txt
         echo "::set-output name=build_receipt::build-receipt.txt"
