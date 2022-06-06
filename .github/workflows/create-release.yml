@@ -317,6 +317,16 @@ jobs:
     #     echo "::set-output name=build_receipt::build-receipt.txt"
     #     echo "::set-output name=run_receipt::run-receipt.txt"
 
+    - name: Write USNs File
+      id: write_usns
+      if: ${{ needs.poll_usns.outputs.usns != '[]'  }}
+      run: |
+        jq . <<< "${USNS}" > "${USNS_PATH}"
+        echo "::set-output name=usns::${USNS_PATH}"
+      env:
+        USNS_PATH: "patched-usns.json"
+        USNS: ${{ needs.poll_usns.outputs.usns }}
+
     - name: Create Release Notes
       id: notes
       # TODO: Switch repo name below
@@ -327,16 +337,6 @@ jobs:
         build_receipt_diff: "+ something"
         run_receipt_diff: "- something else"
         patched_usns: ${{ needs.poll_usns.outputs.usns }}
-
-    - name: Write USNs File
-      id: write_usns
-      if: ${{ needs.poll_usns.outputs.usns != '[]'  }}
-      run: |
-        jq . <<< "${USNS}" > "${USNS_PATH}"
-        echo "::set-output name=usns::${USNS_PATH}"
-      env:
-        USNS_PATH: "patched-usns.json"
-        USNS: ${{ needs.poll_usns.outputs.usns }}
 
     - name: Get Repository Name
       id: repo_name
