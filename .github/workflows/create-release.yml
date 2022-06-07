@@ -197,15 +197,19 @@ jobs:
 
     - name: Fail If Packages Removed
       run: |
-         build=$(jq '. | length' <<< ${{ steps.build_diff.outputs.removed }})
+         build=$(jq '. | length' <<< "${BUILD_REMOVED}")
          echo "Build packages removed: ${build}"
 
-         run=$(jq '. | length' <<< ${{ steps.run_diff.outputs.removed }})
+         run=$(jq '. | length' <<< "${RUN_REMOVED}")
          echo "Run packages removed: ${run}"
 
          if [ "${build}" -gt 0 ] || [ "${run}" -gt 0 ]; then
+           echo "Packages removed. Stack cannot be released."
            exit 1
          fi
+      env:
+        BUILD_REMOVED: ${{ needs.build_diff.outputs.removed }}
+        RUN_REMOVED: ${{ needs.run_diff.outputs.removed }}
 
 
   validate_run_image:
