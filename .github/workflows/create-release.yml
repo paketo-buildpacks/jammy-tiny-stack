@@ -80,6 +80,7 @@ jobs:
         packages: ${{ steps.packages.outputs.packages }}
         last_usns: ${{ steps.patched.outputs.patched }}
 
+    # TODO: Make this a real action
     - name: File Issue
       if: ${{ failure() }}
       # TODO: Update this issue filing to flag USN failure
@@ -163,7 +164,7 @@ jobs:
         asset_pattern: "build-receipt.txt"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/build-receipt.txt"
+        output_path: "/github/workspace/previous-build-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous Run Receipt
@@ -172,8 +173,34 @@ jobs:
         asset_pattern: "run-receipt.txt"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/run-receipt.txt"
+        output_path: "/github/workspace/previous-run-receipt.txt"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Compare Build Packages
+      id: build_diff
+      uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
+      with:
+        previous: "/github/workspace/previous-build-receipt.txt"
+        current: "/github/workspace/build-receipt.txt"
+
+    - name: Compare Run Packages
+      id: run_diff
+      uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
+      with:
+        previous: "/github/workspace/previous-run-receipt.txt"
+        current: "/github/workspace/run-receipt.txt"
+
+    - name: Fail if packages removed
+      run: |
+         build=$(jq '. | length' <<< ${{ steps.build_diff.outputs.removed }})
+         echo "Build packages removed: ${build}"
+
+         run=$(jq '. | length' <<< ${{ steps.run_diff.outputs.removed }})
+         echo "Run packages removed: ${run}"
+
+         if [ "${build}" -gt 0 ] || [ "${run}" -gt 0 ]; then
+           exit 1
+         fi
 
 
   validate_run_image:
