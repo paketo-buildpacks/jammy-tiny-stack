@@ -145,6 +145,11 @@ jobs:
 
   diff:
     name: Diff Packages
+    outputs:
+      build_added: ${{ steps.build_diff.outputs.added }}
+      build_modified: ${{ steps.build_diff.outputs.modified }}
+      run_added: ${{ steps.run_diff.outputs.added }}
+      run_modified: ${{ steps.run_diff.outputs.modified }}
     needs: [ create_stack ]
     runs-on: ubuntu-latest
     steps:
@@ -190,7 +195,7 @@ jobs:
         previous: "/github/workspace/previous-run-receipt.txt"
         current: "/github/workspace/run-receipt.txt"
 
-    - name: Fail if packages removed
+    - name: Fail If Packages Removed
       run: |
          build=$(jq '. | length' <<< ${{ steps.build_diff.outputs.removed }})
          echo "Build packages removed: ${build}"
@@ -205,7 +210,7 @@ jobs:
 
   validate_run_image:
     name: Validate Run Image
-    needs: create_stack
+    needs: [ create_stack, diff ]
     runs-on: ubuntu-latest
     steps:
     - name: Find and Download Previous Run Image
@@ -233,7 +238,7 @@ jobs:
 
   validate_build_image:
     name: Validate Build Image
-    needs: create_stack
+    needs: [ create_stack, diff ]
     runs-on: ubuntu-latest
     steps:
     - name: Find and Download Previous Build Image
@@ -261,7 +266,7 @@ jobs:
 
   test:
     name: Acceptance Test
-    needs: create_stack
+    needs: [ create_stack, diff ]
     runs-on: ubuntu-latest
     steps:
     - name: Setup Go
@@ -306,7 +311,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [poll_usns, test, validate_run_image, validate_build_image]
+    needs: [poll_usns, create_stack, diff, test, validate_run_image, validate_build_image]
     if: ${{ always() && needs.test.result == 'success' && (needs.validate_run_image.result == 'success' || needs.validate_build_image.result == 'success') }}
     steps:
     - name: Checkout With History
@@ -365,8 +370,10 @@ jobs:
       with:
         build_image: "paketobuildpacks/build-jammy-tiny:${{ steps.tag.outputs.tag }}"
         run_image: "paketobuildpacks/run-jammy-tiny:${{ steps.tag.outputs.tag }}"
-        build_receipt_diff: "+ something"
-        run_receipt_diff: "- something else"
+        build_packages_added: ${{ needs.diff.outputs.build_added }}
+        build_packages_modified: ${{ needs.diff.outputs.build_modified }}
+        run_packages_added: ${{ needs.diff.outputs.run_added }}
+        run_packages_modified: ${{ needs.diff.outputs.run_modified }}
         patched_usns: ${{ needs.poll_usns.outputs.usns }}
 
     - name: Get Repository Name

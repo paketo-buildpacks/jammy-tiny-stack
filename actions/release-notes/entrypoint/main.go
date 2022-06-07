@@ -15,36 +15,81 @@ import (
 //go:embed template.md
 var tString string
 
+type Package struct {
+	Name         string `json:"name"`
+	Version      string `json:"version"`
+	Architecture string `json:"architecture"`
+}
+
+type ModifiedPackage struct {
+	Name            string `json:"name"`
+	PreviousVersion string `json:"previousVersion"`
+	CurrentVersion  string `json:"currentVersion"`
+}
+
 type USN struct {
 	Title string `json:"title"`
 	URL   string `json:"url"`
 }
 
 func main() {
+
 	var config struct {
-		BuildImage   string
-		RunImage     string
-		BuildDiff    string
-		RunDiff      string
-		PatchedJSON  string
-		PatchedArray []USN
+		BuildImage                string
+		RunImage                  string
+		BuildPackagesAddedJSON    string
+		BuildPackagesModifiedJSON string
+		RunPackagesAddedJSON      string
+		RunPackagesModifiedJSON   string
+		PatchedJSON               string
 	}
 
 	flag.StringVar(&config.BuildImage, "build-image", "", "Registry location of stack build image")
 	flag.StringVar(&config.RunImage, "run-image", "", "Registry location of stack run image")
-	flag.StringVar(&config.BuildDiff, "build-diff", "", "Diff of build image package receipt")
-	flag.StringVar(&config.RunDiff, "run-diff", "", "Diff of run image package receipt")
 	flag.StringVar(&config.PatchedJSON, "patched-usns", "", "JSON Array of patched USNs")
+	flag.StringVar(&config.BuildPackagesAddedJSON, "build-added", "", "JSON Array of packages added to build image")
+	flag.StringVar(&config.BuildPackagesModifiedJSON, "build-modified", "", "JSON Array of packages modified in build image")
+	flag.StringVar(&config.RunPackagesAddedJSON, "run-added", "", "JSON Array of packages added to run image")
+	flag.StringVar(&config.RunPackagesModifiedJSON, "run-modified", "", "JSON Array of packages modified in run image")
 	flag.Parse()
 
-	if config.PatchedJSON == "" {
-		config.PatchedJSON = `[]`
+	var contents struct {
+		PatchedArray  []USN
+		BuildAdded    []Package
+		BuildModified []ModifiedPackage
+		RunAdded      []Package
+		RunModified   []ModifiedPackage
+		BuildImage    string
+		RunImage      string
 	}
 
-	err := json.Unmarshal([]byte(config.PatchedJSON), &config.PatchedArray)
+	err := json.Unmarshal([]byte(fixEmptyArray(config.PatchedJSON)), &contents.PatchedArray)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesAddedJSON)), &contents.BuildAdded)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesModifiedJSON)), &contents.BuildModified)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesAddedJSON)), &contents.RunAdded)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesModifiedJSON)), &contents.RunModified)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	contents.BuildImage = config.BuildImage
+	contents.RunImage = config.RunImage
 
 	t, err := template.New("template.md").Parse(tString)
 	if err != nil {
@@ -52,10 +97,12 @@ func main() {
 	}
 
 	b := bytes.NewBuffer(nil)
-	err = t.Execute(b, config)
+	err = t.Execute(b, contents)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println(b.String())
 
 	fmt.Println(fmt.Sprintf("::set-output name=release_body::%s", escape(b.String())))
 }
@@ -69,4 +116,11 @@ func escape(original string) string {
 	result = cReturn.ReplaceAllString(result, `%0D`)
 
 	return result
+}
+
+func fixEmptyArray(original string) string {
+	if original == "" {
+		return `[]`
+	}
+	return original
 }

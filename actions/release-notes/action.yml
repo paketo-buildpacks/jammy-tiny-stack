@@ -14,12 +14,18 @@ inputs:
   run_image:
     description: 'Image registry location of run image'
     required: true
-  build_receipt_diff:
-    description: 'Diff between current and previous releases build package receipts'
-    required: true
-  run_receipt_diff:
-    description: 'Diff between current and previous releases run package receipts'
-    required: true
+  build_packages_added:
+    description: 'JSON array of packages added "{ name: name, version: 1.2.3 }"'
+    required: false
+  build_packages_modified:
+    description: 'JSON array of packages modified "{ name: name, previousVersion: 1.2.3, currentVersion: 1.2.4 }"'
+    required: false
+  run_packages_added:
+    description: 'JSON array of packages added "{ name: name, version: 1.2.3 }"'
+    required: false
+  run_packages_modified:
+    description: 'JSON array of packages modified "{ name: name, previousVersion: 1.2.3, currentVersion: 1.2.4 }"'
+    required: false
   patched_usns:
     description: 'JSON array of objects "{ name: USN name, url: USN URL, description: USN description}"'
     required: false
@@ -32,9 +38,13 @@ runs:
   - "${{ inputs.build_image }}"
   - "--run-image"
   - "${{ inputs.run_image }}"
-  - "--build-diff"
-  - "${{ inputs.build_receipt_diff }}"
-  - "--run-diff"
-  - "${{ inputs.run_receipt_diff }}"
   - "--patched-usns"
   - "${{ inputs.patched_usns }}"
+  - "--build-added"
+  - "${{ inputs.build_packages_added }}"
+  - "--build-modified"
+  - "${{ inputs.build_packages_modified }}"
+  - "--run-added"
+  - "${{ inputs.run_packages_added }}"
+  - "--run-modified"
+  - "${{ inputs.run_packages_modified }}"

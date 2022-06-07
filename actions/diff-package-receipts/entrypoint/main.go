@@ -122,6 +122,19 @@ func main() {
 		modifiedJSON = []byte(`[]`)
 	}
 
+	fmt.Println("Added packages:")
+	for _, pkg := range added {
+		fmt.Println(pkg.Name, pkg.Version)
+	}
+	fmt.Println("Removed packages:")
+	for _, pkg := range removed {
+		fmt.Println(pkg.Name, pkg.Version)
+	}
+	fmt.Println("Modified packages:")
+	for _, pkg := range modified {
+		fmt.Printf("%s %s => %s\n", pkg.Name, pkg.PreviousVersion, pkg.CurrentVersion)
+	}
+
 	fmt.Printf("::set-output name=added::%s\n", string(addedJSON))
 	fmt.Printf("::set-output name=removed::%s\n", string(removedJSON))
 	fmt.Printf("::set-output name=modified::%s\n", string(modifiedJSON))

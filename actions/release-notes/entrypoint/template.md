@@ -11,21 +11,48 @@ Run: `{{- .RunImage -}}`
 No USNs patched in this release.
 {{- end }}
 
-## Build Package Diff
-{{ if eq .BuildDiff "" }}
-No diff in build image packages.
+## Build Image Package Changes
+### Added
+{{- if ne (len .BuildAdded) 0 }}
+```
+{{ range .BuildAdded }}
+{{- .Name }} {{ .Version }}
+{{- end }}
+```
 {{- else }}
-```diff
-{{ .BuildDiff }}
-```
-{{ end }}
+No packages added.
+{{- end }}
 
-## Run Package Diff
-{{ if eq .RunDiff "" }}
-No diff in run image packages.
-
-{{ else }}
-```diff
-{{ .RunDiff }}
+### Modified
+{{- if ne (len .BuildModified) 0 }}
 ```
-{{ end }}
+{{ range .BuildModified }}
+{{- .Name }} {{ .CurrentVersion }} (previously {{ .PreviousVersion }})
+{{- end }}
+```
+{{- else }}
+No packages modified.
+{{- end }}
+
+## Run Image Package Changes
+### Added
+{{- if ne (len .RunAdded) 0 }}
+```
+{{ range .RunAdded }}
+{{- .Name }} {{ .Version }}
+{{- end }}
+```
+{{- else }}
+No packages added.
+{{- end }}
+
+### Modified
+{{- if ne (len .RunModified) 0 }}
+```
+{{ range .RunModified }}
+{{- .Name }} {{ .CurrentVersion }} (previously {{ .PreviousVersion }})
+{{- end }}
+```
+{{- else }}
+No packages modified.
+{{- end }}
