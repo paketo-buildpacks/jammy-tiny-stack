@@ -80,23 +80,6 @@ jobs:
         packages: ${{ steps.packages.outputs.packages }}
         last_usns: ${{ steps.patched.outputs.patched }}
 
-    # TODO: Make this a real action
-    - name: File Issue
-      if: ${{ failure() }}
-      # TODO: Update this issue filing to flag USN failure
-      run: |
-        echo "${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}" | gh auth login --with-token
-        release_issue=$(gh issue list --json number --label release-issue --jq .[0].number)
-        if [ -z "${release_issue}" ]; \
-        then gh issue create \
-        --title "Failure: create-release workflow" \
-        --label "release-issue" \
-        --body "[Create release workflow](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}) failed to run. Please take a look to ensure CVE patches can be released. (cc @paketo-buildpacks/stacks-maintainers)" \
-        -R ${{github.repository}}; \
-        else gh issue comment "${release_issue}" --body "Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"; \
-        fi
-        echo "${release_issue}"
-
   create_stack:
     name: Create Stack
     needs: poll_usns
@@ -208,8 +191,8 @@ jobs:
            exit 1
          fi
       env:
-        BUILD_REMOVED: ${{ needs.build_diff.outputs.removed }}
-        RUN_REMOVED: ${{ needs.run_diff.outputs.removed }}
+        BUILD_REMOVED: ${{ steps.build_diff.outputs.removed }}
+        RUN_REMOVED: ${{ steps.run_diff.outputs.removed }}
 
 
   validate_run_image:
@@ -295,22 +278,6 @@ jobs:
 
     # - name: Run Acceptance Tests
     #   run: ./scripts/test.sh --clean
-
-    - name: File Issue
-      if: ${{ failure() }}
-      # TODO: Update this issue filing to flag USN failure
-      run: |
-        echo "${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}" | gh auth login --with-token
-        release_issue=$(gh issue list --json number --label release-issue --jq .[0].number)
-        if [ -z "${release_issue}" ]; \
-        then gh issue create \
-        --title "Failure: create-release workflow" \
-        --label "release-issue" \
-        --body "[Create release workflow](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}) failed to run. Please take a look to ensure CVE patches can be released. (cc @paketo-buildpacks/stacks-maintainers)" \
-        -R ${{github.repository}}; \
-        else gh issue comment "${release_issue}" --body "Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"; \
-        fi
-        echo "${release_issue}"
 
   release:
     name: Release
@@ -465,9 +432,15 @@ jobs:
           ]
 
       # TODO: Maybe add a step after that validates the release assets?
+
+  failure:
+    name: Alert on Failure
+    runs-on: ubuntu-latest
+    needs: [poll_usns, create_stack, diff, test, release]
+    if: ${{ always() && needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure'  }}
+    steps:
+    # TODO: Abstract issue filing into an action
     - name: File Issue
-      if: ${{ failure() }}
-      # TODO: Update this issue filing to flag USN failure
       run: |
         echo "${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}" | gh auth login --with-token
         release_issue=$(gh issue list --json number --label release-issue --jq .[0].number)
