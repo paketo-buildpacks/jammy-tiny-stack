@@ -68,7 +68,7 @@ jobs:
       # TODO: Switch repo name below
       if: ${{ steps.download_patched.outputs.output_path != '' }}
       run: |
-        patched=$( cat "${GITHUB_WORKSPACE}/patched-usns.json" | jq --compact-output . )
+        patched=$(jq --compact-output . < "${GITHUB_WORKSPACE}/patched-usns.json")
         printf "::set-output name=patched::%s\n" "${patched}"
 
     - name: Get New USNs
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout/@v3
+      uses: actions/checkout@v3
 
     - name: Create stack
       run: ./scripts/create.sh
@@ -286,7 +286,7 @@ jobs:
     if: ${{ always() && needs.test.result == 'success' && (needs.validate_run_image.result == 'success' || needs.validate_build_image.result == 'success') }}
     steps:
     - name: Checkout With History
-      uses: actions/checkout/@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0  # gets full history
 
@@ -439,10 +439,13 @@ jobs:
     needs: [poll_usns, create_stack, diff, test, release]
     if: ${{ always() && needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure'  }}
     steps:
+    - name: Checkout
+      uses: actions/checkout@v3
     # TODO: Abstract issue filing into an action
     - name: File Issue
       run: |
-        echo "${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}" | gh auth login --with-token
+        gh auth status
+
         release_issue=$(gh issue list --json number --label release-issue --jq .[0].number)
         if [ -z "${release_issue}" ]; \
         then gh issue create \
@@ -453,3 +456,5 @@ jobs:
         else gh issue comment "${release_issue}" --body "Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"; \
         fi
         echo "${release_issue}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
