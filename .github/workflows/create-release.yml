@@ -89,7 +89,7 @@ jobs:
         last_usns: ${{ steps.patched.outputs.patched }}
 
   ensure_files_changed:
-    name: Compare Files to Previous Release
+    name: Ensure Stack Files Changed
     runs-on: ubuntu-latest
     steps:
     - name: Checkout With History
@@ -332,7 +332,10 @@ jobs:
     - name: Increment Tag
       if: github.event.inputs.version == ''
       id: semver
-      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@main
+      # TODO: Point to increment tag action on main
+      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@retag-head
+      with:
+        allow_head_tagged: true
 
     - name: Set Release Tag
       id: tag
