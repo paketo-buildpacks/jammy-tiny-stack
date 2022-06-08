@@ -152,16 +152,13 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 	fmt.Println("Looking for new USNs...")
 	var feedUSNs []USN
 	for _, item := range feed.Items {
-		// From 'USN-5464-1: e2fsprogs vulnerability' , extracts USN-5464-1
+		// regex extracts 'USN-5464-1' from 'USN-5464-1: e2fsprogs vulnerability'
 		re := regexp.MustCompile(`USN\-\d+\-\d+`)
 		id := re.FindString(item.Title)
 
-		// Matching on IDs is a stricter match since titles are sometimes edited
-		// after publication. matching on titles guards against ID parsing errors
+		// Matching on IDs is stricter since titles are sometimes edited after
+		// publication. Matching on titles guards against ID parsing errors.
 		if (len(lastUSNs) > 0) && (id == lastUSNs[0].ID || item.Title == lastUSNs[0].Title) {
-			// We've already seen this USN
-			// No need to keep adding to list
-
 			fmt.Println("No more new USNs.")
 			break
 		}
@@ -235,16 +232,10 @@ func get(url string) (string, int, error) {
 }
 func extractCVEs(usnBody string, usnURL *url.URL) ([]CVE, error) {
 
-	// matches <a href="/security/CVE-2022-1664">CVE-2022-1664</a> or
-	// <a href="/cve/CVE-2022-1664">CVE-2022-1664</a>
+	// regex matches '<a href="/security/CVE-2022-1664">CVE-2022-1664</a>' or
+	// '<a href="/cve/CVE-2022-1664">CVE-2022-1664</a>'
 	re := regexp.MustCompile(`<a.*?href="([\S]*?(:?cve|security)\/CVE.*?)">(.*?)<\/a.*?>`)
-
 	cves := re.FindAllStringSubmatch(usnBody, -1)
-	// if len(cves) > 0 {
-	// 	for i, match := range cves[0] {
-	// 		fmt.Println("match ", i, ": ", match)
-	// 	}
-	// }
 
 	re = regexp.MustCompile(`.*?href="([\S]*?launchpad\.net/bugs.*?)">(.*?)</li`)
 	lps := re.FindAllStringSubmatch(usnBody, -1)

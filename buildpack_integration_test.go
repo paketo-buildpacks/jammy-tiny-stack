@@ -82,43 +82,12 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 
 		Expect(docker.Pull.Execute(fmt.Sprintf("buildpacksio/lifecycle:%s", lifecycleVersion))).To(Succeed())
 
-		// Create builder from stacks
-
-		skopeo := pexec.NewExecutable("skopeo")
-
-		err = skopeo.Execute(pexec.Execution{
-			Args: []string{
-				"copy",
-				fmt.Sprintf("oci-archive://%s", stack.BuildArchive),
-				fmt.Sprintf("docker-daemon:%s:latest", stack.BuildImageID),
-			},
-		})
-		Expect(err).NotTo(HaveOccurred())
-
-		err = skopeo.Execute(pexec.Execution{
-			Args: []string{
-				"copy",
-				fmt.Sprintf("oci-archive://%s", stack.RunArchive),
-				fmt.Sprintf("docker-daemon:%s:latest", stack.RunImageID),
-			},
-		})
-		Expect(err).NotTo(HaveOccurred())
-
-		pPackBuffer := bytes.NewBuffer(nil)
+		Expect(archiveToDaemon(stack.BuildArchive, stack.BuildImageID)).To(Succeed())
+		Expect(archiveToDaemon(stack.RunArchive, stack.RunImageID)).To(Succeed())
 
 		builder = fmt.Sprintf("builder-%s", uuid.NewString())
-		pPack := pexec.NewExecutable("pack")
-		err = pPack.Execute(pexec.Execution{
-			Stdout: pPackBuffer,
-			Stderr: pPackBuffer,
-			Args: []string{
-				"builder",
-				"create",
-				builder,
-				fmt.Sprintf("--config=%s", builderConfigFilepath),
-			},
-		})
-		Expect(err).NotTo(HaveOccurred(), pPackBuffer.String())
+		logs, err := createBuilder(builderConfigFilepath, builder)
+		Expect(err).NotTo(HaveOccurred(), logs)
 	})
 
 	it.After(func() {
@@ -152,7 +121,6 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 			Execute(name, source)
 		Expect(err).ToNot(HaveOccurred(), logs.String)
 
-		// Ensure go is installed correctly
 		container, err = docker.Container.Run.
 			WithDirect().
 			WithCommand("go").
@@ -166,4 +134,33 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 		Eventually(container).Should(BeAvailable())
 		Eventually(container).Should(Serve(ContainSubstring("go1.17")).OnPort(8080))
 	})
+}
+
+func archiveToDaemon(path, id string) error {
+	skopeo := pexec.NewExecutable("skopeo")
+
+	return skopeo.Execute(pexec.Execution{
+		Args: []string{
+			"copy",
+			fmt.Sprintf("oci-archive://%s", path),
+			fmt.Sprintf("docker-daemon:%s:latest", id),
+		},
+	})
+}
+
+func createBuilder(config string, name string) (string, error) {
+	buf := bytes.NewBuffer(nil)
+
+	pack := pexec.NewExecutable("pack")
+	err := pack.Execute(pexec.Execution{
+		Stdout: buf,
+		Stderr: buf,
+		Args: []string{
+			"builder",
+			"create",
+			name,
+			fmt.Sprintf("--config=%s", name),
+		},
+	})
+	return buf.String(), err
 }

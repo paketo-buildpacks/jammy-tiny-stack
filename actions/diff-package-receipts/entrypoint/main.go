@@ -67,10 +67,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// fmt.Printf("%+v\n", previous)
-	// fmt.Printf("%+v\n", current)
-
-	// Compare them
 	var added, removed []Package
 	var modified []ModifiedPackage
 	for prevName, prevPackage := range previous {
@@ -79,10 +75,10 @@ func main() {
 			removed = append(removed, prevPackage)
 			continue
 		}
-		// Package appears in both previous and current
+		// package appears in both previous and current
 		curPackage := current[prevName]
 		if prevPackage.Version != curPackage.Version || prevPackage.Architecture != curPackage.Architecture {
-			// Package metadata has changed
+			// package metadata has changed
 			modified = append(modified, ModifiedPackage{
 				Name:            curPackage.Name,
 				PreviousVersion: prevPackage.Version,
