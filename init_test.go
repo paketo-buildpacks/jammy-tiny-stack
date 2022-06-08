@@ -1,10 +1,12 @@
 package acceptance_test
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/onsi/gomega/format"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
@@ -29,16 +31,10 @@ func TestAcceptance(t *testing.T) {
 	Expect(err).ToNot(HaveOccurred())
 
 	stack.BuildArchive = filepath.Join(root, "build", "build.oci")
-	// build, err := occam.RandomName()
-	// Expect(err).NotTo(HaveOccurred())
-	// stack.BuildImageID = build
-	stack.BuildImageID = "stack-build-image-id"
+	stack.BuildImageID = fmt.Sprintf("stack-build-%s", uuid.NewString())
 
 	stack.RunArchive = filepath.Join(root, "build", "run.oci")
-	// run, err := occam.RandomName()
-	// Expect(err).NotTo(HaveOccurred())
-	// stack.RunImageID = run
-	stack.RunImageID = "stack-run-image-id"
+	stack.RunImageID = fmt.Sprintf("stack-run-%s", uuid.NewString())
 
 	SetDefaultEventuallyTimeout(10 * time.Second)
 

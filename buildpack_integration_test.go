@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -28,10 +29,11 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 
 		builderConfigFilepath string
 
-		pack   occam.Pack
-		docker occam.Docker
-		source string
-		name   string
+		pack    occam.Pack
+		docker  occam.Docker
+		source  string
+		name    string
+		builder string
 
 		image     occam.Image
 		container occam.Container
@@ -104,6 +106,7 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 
 		pPackBuffer := bytes.NewBuffer(nil)
 
+		builder = fmt.Sprintf("builder-%s", uuid.NewString())
 		pPack := pexec.NewExecutable("pack")
 		err = pPack.Execute(pexec.Execution{
 			Stdout: pPackBuffer,
@@ -111,7 +114,7 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 			Args: []string{
 				"builder",
 				"create",
-				"my-builder",
+				builder,
 				fmt.Sprintf("--config=%s", builderConfigFilepath),
 			},
 		})
@@ -119,16 +122,17 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 	})
 
 	it.After(func() {
-		// Expect(docker.Container.Remove.Execute(container.ID)).To(Succeed())
-		// Expect(docker.Image.Remove.Execute(image.ID)).To(Succeed())
-		// Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(name))).To(Succeed())
-		Expect(docker.Image.Remove.Execute("my-builder")).To(Succeed())
-		Expect(docker.Image.Remove.Execute(stack.BuildImageID)).To(Succeed())
-		Expect(docker.Image.Remove.Execute(stack.RunImageID)).To(Succeed())
-		Expect(os.RemoveAll(source)).To(Succeed())
+		Expect(docker.Container.Remove.Execute(container.ID)).To(Succeed())
+		Expect(docker.Image.Remove.Execute(image.ID)).To(Succeed())
+		Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(name))).To(Succeed())
+
+		Expect(docker.Image.Remove.Execute(builder)).To(Succeed())
 		Expect(os.RemoveAll(builderConfigFilepath)).To(Succeed())
 
-		// Clean up builder
+		Expect(docker.Image.Remove.Execute(stack.BuildImageID)).To(Succeed())
+		Expect(docker.Image.Remove.Execute(stack.RunImageID)).To(Succeed())
+
+		Expect(os.RemoveAll(source)).To(Succeed())
 	})
 
 	it("builds an app with a buildpack", func() {
@@ -144,7 +148,7 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 			WithEnv(map[string]string{
 				"BP_LOG_LEVEL": "DEBUG",
 			}).
-			WithBuilder("my-builder").
+			WithBuilder(builder).
 			Execute(name, source)
 		Expect(err).ToNot(HaveOccurred(), logs.String)
 
