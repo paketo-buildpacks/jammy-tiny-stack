@@ -45,7 +45,6 @@ func main() {
 		PackagesJSON string
 		RSSURL       string
 	}
-	// TODO: Add some tests :D
 
 	flag.StringVar(&config.LastUSNsJSON,
 		"last-usns",
@@ -199,7 +198,7 @@ func getAffectedPackages(usnBody, versionRegex string) []string {
 	re := regexp.MustCompile("Update instructions</h2>(.*?)References")
 	packagesList := re.FindString(usnBody)
 
-	re = regexp.MustCompile(fmt.Sprintf(`%s.*?</ul>`, versionRegex)) /// TODO: Get affected packages for a specific version of UBUNTU
+	re = regexp.MustCompile(fmt.Sprintf(`%s.*?</ul>`, versionRegex))
 	bionicPackages := re.FindString(packagesList)
 
 	re = regexp.MustCompile(`<li class="p-list__item">(.*?)</li>`)

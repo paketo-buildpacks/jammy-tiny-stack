@@ -59,7 +59,6 @@ function find_asset() {
     --arg pattern "${pattern}" \
     --argjson depth "${depth}" \
     '[ limit($depth; .[] | select( .draft == false )) | .assets | .[] | select(.name | test($pattern)) | .browser_download_url][0]' )
-    # TODO: Maybe don't always paginate? Not very efficient
 
   if [[ "${url}" == "null" ]]; then
       if [[ "${strict}" == "true" ]]; then

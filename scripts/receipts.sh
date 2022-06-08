@@ -61,8 +61,6 @@ function main() {
 
   tools::install
 
-  # TODO: Add logging to explain each step here
-  # TODO: Test that passing in path to receipts works
   receipts::generate "${build}" "${buildReceipt}"
   receipts::generate "${run}" "${runReceipt}"
 
