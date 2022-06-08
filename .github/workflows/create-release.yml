@@ -17,7 +17,11 @@ on:
       force:
         description: 'Release stack even if change validator does not detect changes'
         required: true
-        type: boolean
+        type: choice
+        default: 'false'
+        options:
+        - 'true'
+        - 'false'
 
 concurrency: release
 
@@ -261,7 +265,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     needs: [poll_usns, create_stack, diff, ensure_packages_changed, test ]
-    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || github.event.inputs.force == true ) }}
+    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || github.event.inputs.force == 'true' ) }}
     steps:
     - name: Checkout With History
       uses: actions/checkout@v3
