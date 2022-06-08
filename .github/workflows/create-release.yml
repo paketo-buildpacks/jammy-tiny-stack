@@ -14,6 +14,10 @@ on:
       version:
         description: 'Version of the release to cut (e.g. 1.2.3)'
         required: false
+      force:
+        description: 'Release stack even if change validator does not detect changes'
+        required: true
+        type: boolean
 
 concurrency: release
 
@@ -215,6 +219,13 @@ jobs:
       with:
         name: current-run-image
 
+    - name: Skip Release
+      id: skip
+      # TODO: Switch repo name below
+      if: ${{ github.event.inputs.force != true }}
+      run: |
+        exit 1
+
     # - name: Validate Run Image
     #   id: packages
     #   # TODO: Switch repo name below
@@ -243,6 +254,12 @@ jobs:
       with:
         name: current-build-image
 
+    - name: Skip Release
+      id: skip
+      # TODO: Switch repo name below
+      if: ${{ github.event.inputs.force != true }}
+      run: |
+        exit 1
     # - name: Validate Build Image
     #   id: packages
     #   # TODO: Switch repo name below
