@@ -4,9 +4,10 @@ set -eu
 set -o pipefail
 
 readonly PROG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly STACK_DIR="$(cd "${PROG_DIR}/.." && pwd)"
-readonly BIN_DIR="${STACK_DIR}/.bin"
-readonly BUILD_DIR="${STACK_DIR}/build"
+readonly ROOT_DIR="$(cd "${PROG_DIR}/.." && pwd)"
+readonly STACK_DIR="${ROOT_DIR}/stack"
+readonly BIN_DIR="${ROOT_DIR}/.bin"
+readonly BUILD_DIR="${ROOT_DIR}/build"
 
 # shellcheck source=SCRIPTDIR/.util/tools.sh
 source "${PROG_DIR}/.util/tools.sh"
