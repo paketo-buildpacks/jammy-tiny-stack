@@ -203,21 +203,25 @@ jobs:
         RUN_REMOVED: ${{ steps.run_diff.outputs.removed }}
 
   ensure_packages_changed:
-    name: Fail If Neither Run Nor Build Changed
+    name: Ensure Packages Changed
     needs: [ diff ]
     runs-on: ubuntu-latest
     steps:
     - name: Fail If Neither Run Nor Build Changed
       run: |
+         # shellcheck disable=SC2153
          build_added=$(jq '. | length' <<< "${BUILD_ADDED}")
          echo "Build packages added: ${build_added}"
 
+         # shellcheck disable=SC2153
          build_modified=$(jq '. | length' <<< "${BUILD_MODIFIED}")
          echo "Build packages modified: ${build_added}"
 
+         # shellcheck disable=SC2153
          run_added=$(jq '. | length' <<< "${RUN_ADDED}")
          echo "Run packages added: ${run_added}"
 
+         # shellcheck disable=SC2153
          run_modified=$(jq '. | length' <<< "${RUN_MODIFIED}")
          echo "Run packages added: ${run_added}"
 
@@ -231,7 +235,6 @@ jobs:
         BUILD_MODIFIED: ${{ needs.diff.outputs.build_modified }}
         RUN_ADDED: ${{ needs.diff.outputs.run_added }}
         RUN_MODIFIED: ${{ needs.diff.outputs.run_modified }}
-
 
   test:
     name: Acceptance Test
@@ -267,6 +270,11 @@ jobs:
     needs: [poll_usns, create_stack, diff, ensure_packages_changed, test ]
     if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || github.event.inputs.force == 'true' ) }}
     steps:
+    - name: Release Was Forced
+      if: ${{ github.event.inputs.force == 'true' }}
+      run: |
+        echo 'Release was forced. Proceeding.'
+
     - name: Checkout With History
       uses: actions/checkout@v3
       with:
