@@ -27,6 +27,7 @@ type USN struct {
 	AffectedPackages []string `json:"affected_packages"`
 	CVEs             []CVE    `json:"cves"`
 	Title            string   `json:"title"`
+	ID               string   `json:"id"`
 	URL              string   `json:"url"`
 }
 
@@ -105,6 +106,7 @@ func main() {
 		output = []byte(`[]`)
 	}
 
+	fmt.Println("Output: ", string(output))
 	fmt.Printf("::set-output name=usns::%s\n", string(output))
 
 	if config.Output != "" {
@@ -149,7 +151,13 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 	fmt.Println("Looking for new USNs:")
 	var feedUSNs []USN
 	for _, item := range feed.Items {
-		if (len(lastUSNs) > 0) && item.Title == lastUSNs[0].Title {
+		// From 'USN-5464-1: e2fsprogs vulnerability' , extracts USN-5464-1
+		re := regexp.MustCompile(`USN\-\d+\-\d+`)
+		id := re.FindString(item.Title)
+
+		// Matching on IDs is a stricter match since titles are sometimes edited
+		// after publication. matching on titles guards against ID parsing errors
+		if (len(lastUSNs) > 0) && (id == lastUSNs[0].ID || item.Title == lastUSNs[0].Title) {
 			// We've already seen this USN
 			// No need to keep adding to list
 
@@ -174,6 +182,7 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 		}
 
 		feedUSNs = append(feedUSNs, USN{
+			ID:               id,
 			Title:            item.Title,
 			URL:              item.Link,
 			CVEs:             cves,
