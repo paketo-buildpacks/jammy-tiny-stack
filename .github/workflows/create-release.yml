@@ -87,7 +87,7 @@ jobs:
   create_stack:
     name: Create Stack
     needs: poll_usns
-    if: ${{ needs.poll_usns.outputs.usns != '' || github.event_name != 'schedule' }}
+    if: ${{ ! ( needs.poll_usns.outputs.usns == '[]' && github.event_name == 'schedule' ) }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -198,75 +198,36 @@ jobs:
         BUILD_REMOVED: ${{ steps.build_diff.outputs.removed }}
         RUN_REMOVED: ${{ steps.run_diff.outputs.removed }}
 
-
-  validate_run_image:
-    name: Validate Run Image
-    needs: [ create_stack, diff ]
+  ensure_packages_changed:
+    name: Fail If Neither Run Nor Build Changed
+    needs: [ diff ]
     runs-on: ubuntu-latest
     steps:
-    - name: Find and Download Previous Run Image
-      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
-      with:
-        asset_pattern: "run.oci"
-        search_depth: -1 # TODO: this should be 1 once we regularly attach images to releases
-        repo: ${{ github.repository }}
-        strict: true
-        output_path: "/github/workspace/previous_run_image.oci"
-        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-
-    - name: Download run image
-      uses: actions/download-artifact@v3
-      with:
-        name: current-run-image
-
-    - name: Skip Release
-      id: skip
-      # TODO: Switch repo name below
-      if: ${{ github.event.inputs.force != true }}
+    - name: Fail If Neither Run Nor Build Changed
       run: |
-        exit 1
+         build_added=$(jq '. | length' <<< "${BUILD_ADDED}")
+         echo "Build packages added: ${build_added}"
 
-    # - name: Validate Run Image
-    #   id: packages
-    #   # TODO: Switch repo name below
-    #   uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
-    #   with:
-    #     previous_image: "${{ github.workspace}}/previous_run_image.oci"
-    #     image: "${{ github.workspace}}/run.oci"
+         build_modified=$(jq '. | length' <<< "${BUILD_MODIFIED}")
+         echo "Build packages modified: ${build_added}"
 
-  validate_build_image:
-    name: Validate Build Image
-    needs: [ create_stack, diff ]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Find and Download Previous Build Image
-      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
-      with:
-        asset_pattern: "build.oci"
-        search_depth: -1 # TODO: this should be 1 once we regularly attach images to releases
-        repo: ${{ github.repository }}
-        strict: true
-        output_path: "/github/workspace/previous_build_image.oci"
-        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+         run_added=$(jq '. | length' <<< "${RUN_ADDED}")
+         echo "Run packages added: ${run_added}"
 
-    - name: Download current build image
-      uses: actions/download-artifact@v3
-      with:
-        name: current-build-image
+         run_modified=$(jq '. | length' <<< "${RUN_MODIFIED}")
+         echo "Run packages added: ${run_added}"
 
-    - name: Skip Release
-      id: skip
-      # TODO: Switch repo name below
-      if: ${{ github.event.inputs.force != true }}
-      run: |
-        exit 1
-    # - name: Validate Build Image
-    #   id: packages
-    #   # TODO: Switch repo name below
-    #   uses: fg-j/jammy-tiny-stack/actions/validate-image-changed@main
-    #   with:
-    #     previous_image: "${{ github.workspace}}/previous_build_image.oci"
-    #     image: "${{ github.workspace}}/build.oci"
+         if [ "${build_added}" -eq 0 ] && [ "${build_modified}" -eq 0 ] && [ "${run_added}" -eq 0 ] && [ "${run_modified}" -eq 0 ]; then
+           echo "No packages changed."
+           exit 1
+         fi
+         echo "Packages changed."
+      env:
+        BUILD_ADDED: ${{ needs.diff.outputs.build_added }}
+        BUILD_MODIFIED: ${{ needs.diff.outputs.build_modified }}
+        RUN_ADDED: ${{ needs.diff.outputs.run_added }}
+        RUN_MODIFIED: ${{ needs.diff.outputs.run_modified }}
+
 
   test:
     name: Acceptance Test
@@ -299,8 +260,8 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [poll_usns, create_stack, diff, test, validate_run_image, validate_build_image]
-    if: ${{ always() && needs.test.result == 'success' && (needs.validate_run_image.result == 'success' || needs.validate_build_image.result == 'success') }}
+    needs: [poll_usns, create_stack, diff, ensure_packages_changed, test ]
+    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || github.event.inputs.force == true ) }}
     steps:
     - name: Checkout With History
       uses: actions/checkout@v3
