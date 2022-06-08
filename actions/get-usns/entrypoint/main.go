@@ -127,12 +127,14 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 		return usns
 	}
 
+	fmt.Println("Filtering USNs by affected packages...")
 	for _, usn := range usns {
 	matchPkgs:
 		for _, affected := range usn.AffectedPackages {
 			for _, pkg := range packages {
 				if pkg == affected {
 					filtered = append(filtered, usn)
+					fmt.Printf("USN '%s' contains affected package '%s'\n", usn.Title, affected)
 					break matchPkgs
 				}
 			}
@@ -148,7 +150,7 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 		return nil, fmt.Errorf("error parsing rss feed: %w", err)
 	}
 
-	fmt.Println("Looking for new USNs:")
+	fmt.Println("Looking for new USNs...")
 	var feedUSNs []USN
 	for _, item := range feed.Items {
 		// From 'USN-5464-1: e2fsprogs vulnerability' , extracts USN-5464-1
