@@ -1,7 +1,9 @@
 - name: status/possible-priority
   description: This issue is ready to work and should be considered as a potential priority
   color: F9D0C4
-  
+- name: "release-issue"
+  description: Automated issue alerting to release workflow failure
+  color: 941515
 - name: status/prioritized
   description: This issue has been triaged and resolving it is a priority
   color: BFD4F2
