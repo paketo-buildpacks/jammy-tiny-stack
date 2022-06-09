@@ -290,11 +290,20 @@ jobs:
     # - name: Run Acceptance Tests
     #   run: ./scripts/test.sh
 
+  force_release_creation:
+    name: Force Release Creation
+    runs-on: ubuntu-latest
+    if: ${{github.event.inputs.force == 'true'}}
+    steps:
+      - name: Signal force release creation
+        run: |
+          echo "Force release creation input set to true"
+
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [poll_usns, create_stack, diff, ensure_files_changed, ensure_packages_changed, test ]
-    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || needs.ensure_files_changed.result == 'success' || github.event.inputs.force == 'true' ) }}
+    needs: [poll_usns, create_stack, diff, ensure_files_changed, ensure_packages_changed, test, force_release_creation ]
+    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || needs.ensure_files_changed.result == 'success' || needs.force_release_creation.result == 'success' ) }}
     steps:
     - name: Print Release Reasoning
       run: |
