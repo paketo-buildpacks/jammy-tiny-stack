@@ -28,7 +28,8 @@ type USN struct {
 	CVEs             []CVE    `json:"cves"`
 	Title            string   `json:"title"`
 	ID               string   `json:"id"`
-	URL              string   `json:"url"`
+	URL              url.URL  `json:"-"`
+	URLString        string   `json:"url"`
 }
 
 type CVE struct {
@@ -96,6 +97,14 @@ func main() {
 
 	filtered := filterUSNsByPackages(newUSNs, packages)
 
+	fmt.Println("Getting CVE metadata for relevant USNs...")
+	for i := range filtered {
+		err = addCVEs(&filtered[i])
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	output, err := json.Marshal(filtered)
 	if err != nil {
 		log.Fatal(err)
@@ -142,6 +151,20 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 	return filtered
 }
 
+func addCVEs(usn *USN) error {
+	usnBody, code, err := get(usn.URL.String())
+	if err != nil || code != http.StatusOK {
+		return fmt.Errorf("error getting USN: %w", err)
+	}
+
+	cves, err := extractCVEs(usnBody, usn.URL)
+	if err != nil {
+		return fmt.Errorf("error extracting CVEs from USN %s: %w", usn.Title, err)
+	}
+	usn.CVEs = cves
+	return nil
+}
+
 func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, error) {
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseURL(rssURL)
@@ -174,16 +197,11 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 			return nil, fmt.Errorf("error getting USN: %w", err)
 		}
 
-		cves, err := extractCVEs(usnBody, usnURL)
-		if err != nil {
-			return nil, fmt.Errorf("error extracting CVEs from USN %s: %w", item.Title, err)
-		}
-
 		feedUSNs = append(feedUSNs, USN{
 			ID:               id,
 			Title:            item.Title,
-			URL:              item.Link,
-			CVEs:             cves,
+			URL:              *usnURL,
+			URLString:        usnURL.String(),
 			AffectedPackages: getAffectedPackages(usnBody, distro),
 		})
 	}
@@ -230,7 +248,7 @@ func get(url string) (string, int, error) {
 
 	return body, resp.StatusCode, nil
 }
-func extractCVEs(usnBody string, usnURL *url.URL) ([]CVE, error) {
+func extractCVEs(usnBody string, usnURL url.URL) ([]CVE, error) {
 
 	// regex matches '<a href="/security/CVE-2022-1664">CVE-2022-1664</a>' or
 	// '<a href="/cve/CVE-2022-1664">CVE-2022-1664</a>'
