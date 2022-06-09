@@ -2,7 +2,6 @@ FROM ubuntu:jammy
 
 ARG sources
 ARG packages
-# ARG package_args='--allow-downgrades --allow-remove-essential --allow-change-held-packages --no-install-recommends'
 
 RUN echo "$sources" > /etc/apt/sources.list
 
@@ -17,8 +16,6 @@ RUN echo "debconf debconf/frontend select noninteractive" | debconf-set-selectio
   rm -rf /var/lib/apt/lists/* /tmp/*
 
 RUN for path in /workspace /workspace/source-ws /workspace/source; do git config --system --add safe.directory "${path}"; done
-RUN mkdir -p /workspace
-RUN echo "hello" > /workspace/hello.txt
 
-# RUN curl -sL -o /usr/local/bin/yj https://github.com/sclevine/yj/releases/latest/download/yj-linux \
-#   && chmod +x /usr/local/bin/yj
+RUN curl -sL -o /usr/local/bin/yj https://github.com/sclevine/yj/releases/latest/download/yj-linux \
+  && chmod +x /usr/local/bin/yj
