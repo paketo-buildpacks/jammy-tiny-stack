@@ -103,12 +103,22 @@ jobs:
         if [ -z "${changed}" ]
         then
           echo "No relevant files changed since previous release."
-          exit 1
+          echo "::set-output name=stack_files_changed::false"
         else
           echo "Relevant files have changed since previous release."
           echo "${changed}"
-          exit 0
+          echo "::set-output name=stack_files_changed::true"
         fi
+
+  run_if_stack_files_changed:
+    name: Run If Stack Files Changed
+    runs-on: ubuntu-latest
+    needs: [ensure_files_changed]
+    if: ${{ needs.ensure_files_changed.outputs.stack_files_changed == 'true' }}
+    steps:
+      - name: Run if stack files changed
+        run: |
+          echo "stack files have changed"
 
   create_stack:
     name: Create Stack
@@ -302,15 +312,15 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [poll_usns, create_stack, diff, ensure_files_changed, ensure_packages_changed, test, force_release_creation ]
-    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || needs.ensure_files_changed.result == 'success' || needs.force_release_creation.result == 'success' ) }}
+    needs: [poll_usns, create_stack, diff, run_if_stack_files_changed, ensure_packages_changed, test, force_release_creation ]
+    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || needs.run_if_stack_files_changed.result == 'success' || needs.force_release_creation.result == 'success' ) }}
     steps:
     - name: Print Release Reasoning
       run: |
         printf "Diff Packages: %s\n" "${{ needs.diff.result }}"
         printf "Acceptance Tests: %s\n" "${{ needs.test.result }}"
         printf "Ensure Packages Changed: %s\n" "${{ needs.ensure_packages_changed.result }}"
-        printf "Ensure Files Changed: %s\n" "${{ needs.ensure_files_changed.result }}"
+        printf "Run If Stack Files Changed: %s\n" "${{ needs.run_if_stack_files_changed.result }}"
         printf "Force Release: %s\n" "${{ github.event.inputs.force }}"
 
     - name: Checkout With History
