@@ -282,7 +282,7 @@ jobs:
 
   test:
     name: Acceptance Test
-    needs: [ create_stack, diff ]
+    needs: [ create_stack ]
     runs-on: ubuntu-latest
     steps:
     - name: Setup Go
