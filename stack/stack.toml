@@ -13,14 +13,10 @@ platforms = ["linux/amd64"]
 
   [build.args]
     sources = """
-    deb http://archive.ubuntu.com/ubuntu jammy main universe
-    deb http://archive.ubuntu.com/ubuntu jammy-updates main universe
-    deb http://archive.ubuntu.com/ubuntu jammy-security main universe
+    deb http://archive.ubuntu.com/ubuntu jammy main
+    deb http://archive.ubuntu.com/ubuntu jammy-updates main
+    deb http://archive.ubuntu.com/ubuntu jammy-security main
     """
-    # TODO: Why do we use main universe and multiverse package repositories?
-    # See https://help.ubuntu.com/community/Repositories/Ubuntu for meaning
-    # of the classifications
-
 
     packages = """\
     build-essential \
