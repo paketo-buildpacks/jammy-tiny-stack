@@ -5,8 +5,7 @@ maintainer = "Paketo Buildpacks"
 platforms = ["linux/amd64"]
 
 [build]
-  # TODO: Set description
-  description = "ubuntu:jammy <TBD>"
+  description = "ubuntu:jammy with compilers and shell utilities"
   dockerfile = "./build.Dockerfile"
   gid = 1000
   shell = "/bin/bash"

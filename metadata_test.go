@@ -71,7 +71,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(file.Config.Labels).To(SatisfyAll(
 				HaveKeyWithValue("io.buildpacks.stack.id", "io.buildpacks.stacks.jammy.tiny"),
-				HaveKeyWithValue("io.buildpacks.stack.description", "ubuntu:jammy <TBD>"),
+				HaveKeyWithValue("io.buildpacks.stack.description", "ubuntu:jammy with compilers and shell utilities"),
 				HaveKeyWithValue("io.buildpacks.stack.distro.name", "ubuntu"),
 				HaveKeyWithValue("io.buildpacks.stack.distro.version", "22.04"),
 				HaveKeyWithValue("io.buildpacks.stack.homepage", "https://github.com/paketo-buildpacks/jammy-tiny-stack"),
