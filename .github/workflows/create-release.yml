@@ -298,13 +298,13 @@ jobs:
         mkdir -p build
 
     - name: Download Build Image
-      uses: actions/upload-artifact@v3
+      uses: actions/download-artifact@v3
       with:
         name: build-image
         path: build
 
     - name: Download Run Image
-      uses: actions/upload-artifact@v3
+      uses: actions/download-artifact@v3
       with:
         name: run-image
         path: build
