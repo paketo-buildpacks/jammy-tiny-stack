@@ -363,8 +363,7 @@ jobs:
     - name: Increment Tag
       if: github.event.inputs.version == ''
       id: semver
-      # TODO: Point to increment tag action on main
-      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@retag-head
+      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@main
       with:
         allow_head_tagged: true
 
