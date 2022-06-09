@@ -88,6 +88,8 @@ jobs:
   stack_files_changed:
     name: Determine If Stack Files Changed
     runs-on: ubuntu-latest
+    needs: poll_usns
+    if: ${{ ! ( needs.poll_usns.outputs.usns == '[]' && github.event_name == 'schedule' ) }}
     steps:
     - name: Checkout With History
       uses: actions/checkout@v3
