@@ -300,13 +300,13 @@ jobs:
     - name: Download Build Image
       uses: actions/download-artifact@v3
       with:
-        name: build-image
+        name: current-build-image
         path: build
 
     - name: Download Run Image
       uses: actions/download-artifact@v3
       with:
-        name: run-image
+        name: current-run-image
         path: build
 
     - name: Run Acceptance Tests
