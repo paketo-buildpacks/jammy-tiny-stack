@@ -266,10 +266,11 @@ jobs:
         if [ "${build_added}" -eq 0 ] && [ "${build_modified}" -eq 0 ] && [ "${run_added}" -eq 0 ] && [ "${run_modified}" -eq 0 ]; then
           echo "No packages changed."
           echo "::set-output name=packages_changed::false"
+        else
+          echo "Packages changed."
+          echo "::set-output name=packages_changed::true"
         fi
 
-        echo "Packages changed."
-        echo "::set-output name=packages_changed::true"
       env:
         BUILD_ADDED: ${{ needs.diff.outputs.build_added }}
         BUILD_MODIFIED: ${{ needs.diff.outputs.build_modified }}
