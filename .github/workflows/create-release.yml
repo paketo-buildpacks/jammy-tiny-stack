@@ -297,20 +297,20 @@ jobs:
       run: |
         mkdir -p build
 
-    # - name: Download Build Image
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: build-image
-    #     path: build
+    - name: Download Build Image
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-image
+        path: build
 
-    # - name: Download Run Image
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: run-image
-    #     path: build
+    - name: Download Run Image
+      uses: actions/upload-artifact@v3
+      with:
+        name: run-image
+        path: build
 
-    # - name: Run Acceptance Tests
-    #   run: ./scripts/test.sh
+    - name: Run Acceptance Tests
+      run: ./scripts/test.sh
 
   force_release_creation:
     name: Force Release Creation
