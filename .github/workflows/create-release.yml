@@ -101,6 +101,7 @@ jobs:
     - name: Compare With Previous Release
       id: compare
       run: |
+        # shellcheck disable=SC2046
         changed="$(git diff --name-only $(git describe --tags --abbrev=0) -- stack)"
         if [ -z "${changed}" ]
         then
