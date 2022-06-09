@@ -159,7 +159,7 @@ func createBuilder(config string, name string) (string, error) {
 			"builder",
 			"create",
 			name,
-			fmt.Sprintf("--config=%s", name),
+			fmt.Sprintf("--config=%s", config),
 		},
 	})
 	return buf.String(), err
