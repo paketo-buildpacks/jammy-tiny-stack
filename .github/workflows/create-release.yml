@@ -88,8 +88,8 @@ jobs:
         packages: ${{ steps.packages.outputs.packages }}
         last_usns: ${{ steps.patched.outputs.patched }}
 
-  ensure_files_changed:
-    name: Ensure Stack Files Changed
+  stack_files_changed:
+    name: Determine If Stack Files Changed
     runs-on: ubuntu-latest
     steps:
     - name: Checkout With History
@@ -113,8 +113,8 @@ jobs:
   run_if_stack_files_changed:
     name: Run If Stack Files Changed
     runs-on: ubuntu-latest
-    needs: [ensure_files_changed]
-    if: ${{ needs.ensure_files_changed.outputs.stack_files_changed == 'true' }}
+    needs: [stack_files_changed]
+    if: ${{ needs.stack_files_changed.outputs.stack_files_changed == 'true' }}
     steps:
       - name: Run if stack files changed
         run: |
