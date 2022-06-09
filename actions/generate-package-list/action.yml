@@ -1,5 +1,5 @@
 name: 'Generate Package List'
-description: 'Generates a list of packages (without versions) given a dpkg -1 style package receipt'
+description: 'Generates a list of packages (without versions) given a dpkg -l style package receipt'
 inputs:
   build_receipt:
     description: 'Package receipt for build image'

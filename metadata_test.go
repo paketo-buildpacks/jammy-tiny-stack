@@ -9,7 +9,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	. "github.com/onsi/gomega"
-	"github.com/paketo-buildpacks/packit/vacation"
+	"github.com/paketo-buildpacks/packit/v2/vacation"
 	"github.com/sclevine/spec"
 
 	. "github.com/paketo-buildpacks/jam/integration/matchers"

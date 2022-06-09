@@ -4,10 +4,10 @@ go 1.18
 
 require (
 	github.com/google/go-containerregistry v0.8.1-0.20220209165246-a44adc326839
+	github.com/google/uuid v1.3.0
 	github.com/onsi/gomega v1.19.0
 	github.com/paketo-buildpacks/jam v1.3.0
 	github.com/paketo-buildpacks/occam v0.9.0
-	github.com/paketo-buildpacks/packit v1.3.1
 	github.com/paketo-buildpacks/packit/v2 v2.3.0
 	github.com/sclevine/spec v1.4.0
 )
@@ -30,7 +30,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/klauspost/compress v1.15.2 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/moby/sys/mount v0.3.2 // indirect
