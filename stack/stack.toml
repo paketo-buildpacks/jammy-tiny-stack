@@ -10,7 +10,6 @@ platforms = ["linux/amd64"]
   gid = 1000
   shell = "/bin/bash"
   uid = 1001
-  # A change to the stack descriptor
 
   [build.args]
     sources = """
