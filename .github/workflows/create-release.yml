@@ -234,39 +234,51 @@ jobs:
         BUILD_REMOVED: ${{ steps.build_diff.outputs.removed }}
         RUN_REMOVED: ${{ steps.run_diff.outputs.removed }}
 
-  ensure_packages_changed:
-    name: Ensure Packages Changed
+  packages_changed:
+    name: Determine If Packages Changed
     needs: [ diff ]
     runs-on: ubuntu-latest
     steps:
     - name: Fail If Neither Run Nor Build Changed
       run: |
-         # shellcheck disable=SC2153
-         build_added=$(jq '. | length' <<< "${BUILD_ADDED}")
-         echo "Build packages added: ${build_added}"
+        # shellcheck disable=SC2153
+        build_added=$(jq '. | length' <<< "${BUILD_ADDED}")
+        echo "Build packages added: ${build_added}"
 
-         # shellcheck disable=SC2153
-         build_modified=$(jq '. | length' <<< "${BUILD_MODIFIED}")
-         echo "Build packages modified: ${build_added}"
+        # shellcheck disable=SC2153
+        build_modified=$(jq '. | length' <<< "${BUILD_MODIFIED}")
+        echo "Build packages modified: ${build_added}"
 
-         # shellcheck disable=SC2153
-         run_added=$(jq '. | length' <<< "${RUN_ADDED}")
-         echo "Run packages added: ${run_added}"
+        # shellcheck disable=SC2153
+        run_added=$(jq '. | length' <<< "${RUN_ADDED}")
+        echo "Run packages added: ${run_added}"
 
-         # shellcheck disable=SC2153
-         run_modified=$(jq '. | length' <<< "${RUN_MODIFIED}")
-         echo "Run packages added: ${run_added}"
+        # shellcheck disable=SC2153
+        run_modified=$(jq '. | length' <<< "${RUN_MODIFIED}")
+        echo "Run packages added: ${run_added}"
 
-         if [ "${build_added}" -eq 0 ] && [ "${build_modified}" -eq 0 ] && [ "${run_added}" -eq 0 ] && [ "${run_modified}" -eq 0 ]; then
-           echo "No packages changed."
-           exit 1
-         fi
-         echo "Packages changed."
+        if [ "${build_added}" -eq 0 ] && [ "${build_modified}" -eq 0 ] && [ "${run_added}" -eq 0 ] && [ "${run_modified}" -eq 0 ]; then
+          echo "No packages changed."
+          echo "::set-output name=packages_changed::false"
+        fi
+
+        echo "Packages changed."
+        echo "::set-output name=packages_changed::true"
       env:
         BUILD_ADDED: ${{ needs.diff.outputs.build_added }}
         BUILD_MODIFIED: ${{ needs.diff.outputs.build_modified }}
         RUN_ADDED: ${{ needs.diff.outputs.run_added }}
         RUN_MODIFIED: ${{ needs.diff.outputs.run_modified }}
+
+  run_if_packages_changed:
+    name: Run If Packages Changed
+    runs-on: ubuntu-latest
+    needs: [packages_changed]
+    if: ${{ needs.packages_changed.outputs.packages_changed == 'true' }}
+    steps:
+      - name: Run if packages changed
+        run: |
+          echo "packages have changed"
 
   test:
     name: Acceptance Test
@@ -312,14 +324,14 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [poll_usns, create_stack, diff, run_if_stack_files_changed, ensure_packages_changed, test, force_release_creation ]
-    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.ensure_packages_changed.result == 'success' || needs.run_if_stack_files_changed.result == 'success' || needs.force_release_creation.result == 'success' ) }}
+    needs: [poll_usns, create_stack, diff, run_if_stack_files_changed, run_if_packages_changed, test, force_release_creation ]
+    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.run_if_packages_changed.result == 'success' || needs.run_if_stack_files_changed.result == 'success' || needs.force_release_creation.result == 'success' ) }}
     steps:
     - name: Print Release Reasoning
       run: |
         printf "Diff Packages: %s\n" "${{ needs.diff.result }}"
         printf "Acceptance Tests: %s\n" "${{ needs.test.result }}"
-        printf "Ensure Packages Changed: %s\n" "${{ needs.ensure_packages_changed.result }}"
+        printf "Run If Packages Changed: %s\n" "${{ needs.run_if_packages_changed.result }}"
         printf "Run If Stack Files Changed: %s\n" "${{ needs.run_if_stack_files_changed.result }}"
         printf "Force Release: %s\n" "${{ github.event.inputs.force }}"
 
