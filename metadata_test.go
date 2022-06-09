@@ -187,49 +187,49 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/base-files", SatisfyAll(
 				ContainSubstring("Package: base-files"),
-				ContainSubstring("Version: 12ubuntu4.1"), // TODO: use regex instead of hard-coding
+				MatchRegexp("Version: [0-9]+ubuntu[0-9\\.]+"),
 				ContainSubstring("Architecture: amd64"),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/ca-certificates", SatisfyAll(
 				ContainSubstring("Package: ca-certificates"),
-				ContainSubstring("Version: 20211016"), // TODO: use regex instead of hard-coding
+				MatchRegexp("Version: [0-9]+"),
 				ContainSubstring("Architecture: all"),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/libc6", SatisfyAll(
 				ContainSubstring("Package: libc6"),
-				ContainSubstring("Version: 2.35-0ubuntu3"), // TODO: use regex instead of hard-coding
+				MatchRegexp("Version: [0-9\\.\\-]+ubuntu[0-9\\.]+"),
 				ContainSubstring("Architecture: amd64"),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/libssl3", SatisfyAll(
 				ContainSubstring("Package: libssl3"),
-				ContainSubstring("Version: 3.0.2-0ubuntu1.2"), // TODO: use regex instead of hard-coding
+				MatchRegexp("Version: [0-9\\.\\-]+ubuntu[0-9\\.]+"),
 				ContainSubstring("Architecture: amd64"),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/netbase", SatisfyAll(
 				ContainSubstring("Package: netbase"),
-				ContainSubstring("Version: 6.3"), // TODO: use regex instead of hard-coding
+				MatchRegexp("Version: [0-9\\.]+"),
 				ContainSubstring("Architecture: all"),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/openssl", SatisfyAll(
 				ContainSubstring("Package: openssl"),
-				ContainSubstring("Version: 3.0.2-0ubuntu1.2"), // TODO: use regex instead of hard-coding
+				MatchRegexp("Version: [0-9\\.\\-]+ubuntu[0-9\\.]+"),
 				ContainSubstring("Architecture: amd64"),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/tzdata", SatisfyAll(
 				ContainSubstring("Package: tzdata"),
-				ContainSubstring("Version: 2022a-0ubuntu1"), // TODO: use regex instead of hard-coding
+				MatchRegexp("Version: [a-z0-9\\.\\-]+ubuntu[0-9\\.]+"),
 				ContainSubstring("Architecture: all"),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/zlib1g", SatisfyAll(
 				ContainSubstring("Package: zlib1g"),
-				ContainSubstring("Version: 1:1.2.11.dfsg-2ubuntu9"), // TODO: use regex instead of hard-coding
+				MatchRegexp("Version: [a-z0-9\\.\\-\\:]+ubuntu[0-9\\.]+"),
 				ContainSubstring("Architecture: amd64"),
 			)))
 
