@@ -153,8 +153,12 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 
 func addCVEs(usn *USN) error {
 	usnBody, code, err := get(usn.URL.String())
-	if err != nil || code != http.StatusOK {
+	if err != nil {
 		return fmt.Errorf("error getting USN: %w", err)
+	}
+
+	if code != http.StatusOK {
+		return fmt.Errorf("unexpected status code getting USN: %d", code)
 	}
 
 	cves, err := extractCVEs(usnBody, usn.URL)
@@ -193,8 +197,12 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 		}
 
 		usnBody, code, err := get(usnURL.String())
-		if err != nil || code != http.StatusOK {
+		if err != nil {
 			return nil, fmt.Errorf("error getting USN: %w", err)
+		}
+
+		if code != http.StatusOK {
+			return nil, fmt.Errorf("unexpected status code getting USN: %d", code)
 		}
 
 		feedUSNs = append(feedUSNs, USN{
