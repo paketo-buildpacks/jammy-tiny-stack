@@ -33,7 +33,7 @@ jobs:
       id: previous_build
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "build-receipt.txt"
+        asset_pattern: "build-receipt.cyclonedx.json"
         search_depth: 1
         repo: ${{ github.repository }}
         output_path: "/github/workspace/build-receipt.txt"
@@ -46,7 +46,7 @@ jobs:
         asset_pattern: "run-receipt.txt"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/run-receipt.txt"
+        output_path: "/github/workspace/run-receipt.cyclonedx.json"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Get Package List
@@ -55,8 +55,8 @@ jobs:
       if: ${{ steps.previous_build.outputs.output_path != '' && steps.previous_run.outputs.output_path != '' }}
       uses: fg-j/jammy-tiny-stack/actions/generate-package-list@main
       with:
-        build_receipt: "${{ github.workspace }}/build-receipt.txt"
-        run_receipt: "${{ github.workspace }}/run-receipt.txt"
+        build_receipt: "${{ github.workspace }}/build-receipt.cyclonedx.json"
+        run_receipt: "${{ github.workspace }}/run-receipt.cyclonedx.json"
 
     - name: Find and Download Previous Patched USNs
       id: download_patched

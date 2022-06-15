@@ -16,15 +16,17 @@ import (
 var tString string
 
 type Package struct {
-	Name         string `json:"name"`
-	Version      string `json:"version"`
-	Architecture string `json:"architecture"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	PURL    string `json:"purl"`
 }
 
 type ModifiedPackage struct {
 	Name            string `json:"name"`
 	PreviousVersion string `json:"previousVersion"`
 	CurrentVersion  string `json:"currentVersion"`
+	PreviousPURL    string `json:"previousPurl"`
+	CurrentPURL     string `json:"currentPurl"`
 }
 
 type USN struct {
