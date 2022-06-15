@@ -31,7 +31,7 @@ jobs:
     steps:
     - name: Find and Download Previous Build Receipt
       id: previous_build
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "build-receipt.txt"
         search_depth: 1
@@ -41,7 +41,7 @@ jobs:
 
     - name: Find and Download Previous Run Receipt
       id: previous_run
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "run-receipt.txt"
         search_depth: 1
@@ -51,15 +51,16 @@ jobs:
 
     - name: Get Package List
       id: packages
+      # TODO: Switch repo name below
       if: ${{ steps.previous_build.outputs.output_path != '' && steps.previous_run.outputs.output_path != '' }}
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/generate-package-list@main
+      uses: fg-j/jammy-tiny-stack/actions/generate-package-list@main
       with:
         build_receipt: "${{ github.workspace }}/build-receipt.txt"
         run_receipt: "${{ github.workspace }}/run-receipt.txt"
 
     - name: Find and Download Previous Patched USNs
       id: download_patched
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "patched-usns.json"
         search_depth: "-1"   # Search all releases
@@ -69,6 +70,7 @@ jobs:
 
     - name: Output Patched USNs as JSON String
       id: patched
+      # TODO: Switch repo name below
       if: ${{ steps.download_patched.outputs.output_path != '' }}
       run: |
         patched=$(jq --compact-output . < "${GITHUB_WORKSPACE}/patched-usns.json")
@@ -76,7 +78,8 @@ jobs:
 
     - name: Get New USNs
       id: usns
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/get-usns@main
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/get-usns@main
       with:
         distribution: 'jammy'
         packages: ${{ steps.packages.outputs.packages }}
@@ -187,7 +190,7 @@ jobs:
         name: current-run-receipt
 
     - name: Find and Download Previous Build Receipt
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "build-receipt.txt"
         search_depth: 1
@@ -196,7 +199,7 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous Run Receipt
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "run-receipt.txt"
         search_depth: 1
@@ -206,14 +209,14 @@ jobs:
 
     - name: Compare Build Packages
       id: build_diff
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/diff-package-receipts@main
+      uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
       with:
         previous: "/github/workspace/previous-build-receipt.txt"
         current: "/github/workspace/build-receipt.txt"
 
     - name: Compare Run Packages
       id: run_diff
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/diff-package-receipts@main
+      uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
       with:
         previous: "/github/workspace/previous-run-receipt.txt"
         current: "/github/workspace/run-receipt.txt"
@@ -392,7 +395,8 @@ jobs:
 
     - name: Create Release Notes
       id: notes
-      uses: paketo-buildpacks/jammy-tiny-stack/actions/release-notes@main
+      # TODO: Switch repo name below
+      uses: fg-j/jammy-tiny-stack/actions/release-notes@main
       with:
         build_image: "paketobuildpacks/build-jammy-tiny:${{ steps.tag.outputs.tag }}"
         run_image: "paketobuildpacks/run-jammy-tiny:${{ steps.tag.outputs.tag }}"
