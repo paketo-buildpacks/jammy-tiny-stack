@@ -36,14 +36,14 @@ jobs:
         asset_pattern: "build-receipt.cyclonedx.json"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/build-receipt.txt"
+        output_path: "/github/workspace/build-receipt.cyclonedx.json"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous Run Receipt
       id: previous_run
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "run-receipt.txt"
+        asset_pattern: "run-receipt.cyclonedx.json"
         search_depth: 1
         repo: ${{ github.repository }}
         output_path: "/github/workspace/run-receipt.cyclonedx.json"
@@ -140,10 +140,10 @@ jobs:
       run: |
         scripts/receipts.sh --build-archive "${GITHUB_WORKSPACE}/build/build.oci" \
                             --run-archive "${GITHUB_WORKSPACE}/build/run.oci" \
-                            --build-receipt build-receipt.txt \
-                            --run-receipt run-receipt.txt
-        echo "::set-output name=build_receipt::build-receipt.txt"
-        echo "::set-output name=run_receipt::run-receipt.txt"
+                            --build-receipt build-receipt.cyclonedx.json \
+                            --run-receipt run-receipt.cyclonedx.json
+        echo "::set-output name=build_receipt::build-receipt.cyclonedx.json"
+        echo "::set-output name=run_receipt::run-receipt.cyclonedx.json"
 
     - name: Upload run image
       uses: actions/upload-artifact@v3
@@ -192,34 +192,34 @@ jobs:
     - name: Find and Download Previous Build Receipt
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "build-receipt.txt"
+        asset_pattern: "build-receipt.cyclonedx.json"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/previous-build-receipt.txt"
+        output_path: "/github/workspace/previous-build-receipt.cyclonedx.json"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous Run Receipt
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "run-receipt.txt"
+        asset_pattern: "run-receipt.cyclonedx.json"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/previous-run-receipt.txt"
+        output_path: "/github/workspace/previous-run-receipt.cyclonedx.json"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Compare Build Packages
       id: build_diff
       uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
       with:
-        previous: "/github/workspace/previous-build-receipt.txt"
-        current: "/github/workspace/build-receipt.txt"
+        previous: "/github/workspace/previous-build-receipt.cyclonedx.json"
+        current: "/github/workspace/build-receipt.cyclonedx.json"
 
     - name: Compare Run Packages
       id: run_diff
       uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
       with:
-        previous: "/github/workspace/previous-run-receipt.txt"
-        current: "/github/workspace/run-receipt.txt"
+        previous: "/github/workspace/previous-run-receipt.cyclonedx.json"
+        current: "/github/workspace/run-receipt.cyclonedx.json"
 
     - name: Fail If Packages Removed
       run: |
@@ -439,13 +439,13 @@ jobs:
               "content_type": "application/gzip"
             },
             {
-              "path": "build-receipt.txt",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+              "path": "build-receipt.cyclonedx.json",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.cyclonedx.json",
               "content_type": "text/plain"
             },
             {
-              "path": "run-receipt.txt",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+              "path": "run-receipt.cyclonedx.json",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.cyclonedx.json",
               "content_type": "text/plain"
             },
             {
@@ -479,13 +479,13 @@ jobs:
               "content_type": "application/gzip"
             },
             {
-              "path": "build-receipt.txt",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+              "path": "build-receipt.cyclonedx.json",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.cyclonedx.json",
               "content_type": "text/plain"
             },
             {
-              "path": "run-receipt.txt",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+              "path": "run-receipt.cyclonedx.json",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.cyclonedx.json",
               "content_type": "text/plain"
             }
           ]
