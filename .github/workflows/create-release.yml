@@ -208,8 +208,8 @@ jobs:
     - name: Write Empty Previous Receipts
       if: ${{ steps.check_previous.outputs.exists == 'false' }}
       run: |
-        echo "[]" > "${{ github.workspace }}/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
-        echo "[]" > "${{ github.workspace }}/previous-${{ env.RUN_RECEIPT_FILENAME }}"
+        echo '{"components":[]}' > "${{ github.workspace }}/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
+        echo '{"components":[]}' > "${{ github.workspace }}/previous-${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Find and Download Previous Build Receipt
       if: ${{ steps.check_previous.outputs.exists == 'true' }}
