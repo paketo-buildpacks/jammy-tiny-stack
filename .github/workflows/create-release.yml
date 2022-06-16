@@ -2,7 +2,7 @@ name: Create Release
 
 on:
   schedule:
-  - cron: '*/10 * * * *' # every 10 minutes
+  - cron: '*/10 * * * *'  # every 10 minutes
   push:
     branches:
     - main
@@ -21,7 +21,10 @@ on:
         - 'false'
 
 concurrency: release
-
+env:
+  BUILD_RECEIPT_FILENAME: "build-receipt.cyclonedx.json"
+  RUN_RECEIPT_FILENAME: "run-receipt.cyclonedx.json"
+  PATCHED_USNS_FILENAME: "patched-usns.json"
 jobs:
   poll_usns:
     name: Poll USNs
@@ -33,20 +36,20 @@ jobs:
       id: previous_build
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "build-receipt.cyclonedx.json"
+        asset_pattern: "${{ env.BUILD_RECEIPT_FILENAME }}"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/build-receipt.cyclonedx.json"
+        output_path: "/github/workspace/${{ env.BUILD_RECEIPT_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous Run Receipt
       id: previous_run
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "run-receipt.cyclonedx.json"
+        asset_pattern: "${{ env.RUN_RECEIPT_FILENAME }}"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/run-receipt.cyclonedx.json"
+        output_path: "/github/workspace/${{ env.RUN_RECEIPT_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Get Package List
@@ -55,17 +58,17 @@ jobs:
       if: ${{ steps.previous_build.outputs.output_path != '' && steps.previous_run.outputs.output_path != '' }}
       uses: fg-j/jammy-tiny-stack/actions/generate-package-list@main
       with:
-        build_receipt: "${{ github.workspace }}/build-receipt.cyclonedx.json"
-        run_receipt: "${{ github.workspace }}/run-receipt.cyclonedx.json"
+        build_receipt: "${{ github.workspace }}/${{ env.BUILD_RECEIPT_FILENAME }}"
+        run_receipt: "${{ github.workspace }}/${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Find and Download Previous Patched USNs
       id: download_patched
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "patched-usns.json"
+        asset_pattern: "${{ env.PATCHED_USNS_FILENAME }}"
         search_depth: "-1"   # Search all releases
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/patched-usns.json"
+        output_path: "/github/workspace/${{ env.PATCHED_USNS_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Output Patched USNs as JSON String
@@ -73,7 +76,7 @@ jobs:
       # TODO: Switch repo name below
       if: ${{ steps.download_patched.outputs.output_path != '' }}
       run: |
-        patched=$(jq --compact-output . < "${GITHUB_WORKSPACE}/patched-usns.json")
+        patched=$(jq --compact-output . < "${GITHUB_WORKSPACE}/${{ env.PATCHED_USNS_FILENAME }}")
         printf "::set-output name=patched::%s\n" "${patched}"
 
     - name: Get New USNs
@@ -119,9 +122,9 @@ jobs:
     needs: [stack_files_changed]
     if: ${{ needs.stack_files_changed.outputs.stack_files_changed == 'true' }}
     steps:
-      - name: Run if stack files changed
-        run: |
-          echo "stack files have changed"
+    - name: Run if stack files changed
+      run: |
+        echo "stack files have changed"
 
   create_stack:
     name: Create Stack
@@ -140,10 +143,10 @@ jobs:
       run: |
         scripts/receipts.sh --build-archive "${GITHUB_WORKSPACE}/build/build.oci" \
                             --run-archive "${GITHUB_WORKSPACE}/build/run.oci" \
-                            --build-receipt build-receipt.cyclonedx.json \
-                            --run-receipt run-receipt.cyclonedx.json
-        echo "::set-output name=build_receipt::build-receipt.cyclonedx.json"
-        echo "::set-output name=run_receipt::run-receipt.cyclonedx.json"
+                            --build-receipt ${{ env.BUILD_RECEIPT_FILENAME }} \
+                            --run-receipt ${{ env.RUN_RECEIPT_FILENAME }}
+        echo "::set-output name=build_receipt::${{ env.BUILD_RECEIPT_FILENAME }}"
+        echo "::set-output name=run_receipt::${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Upload run image
       uses: actions/upload-artifact@v3
@@ -189,37 +192,58 @@ jobs:
       with:
         name: current-run-receipt
 
+    - name: Check for Previous Releases
+      id: check_previous
+      run: |
+        gh auth status
+        # shellcheck disable=SC2046
+        if [ $(gh api "/repos/${{ github.repository }}/releases" | jq -r 'length') -eq 0 ]; then
+          echo "::set-output name=exists::false"
+          exit 0
+        fi
+        echo "::set-output name=exists::true"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Write Empty Previous Receipts
+      if: ${{ steps.check_previous.outputs.exists == 'false' }}
+      run: |
+        echo "[]" > "${{ github.workspace }}/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
+        echo "[]" > "${{ github.workspace }}/previous-${{ env.RUN_RECEIPT_FILENAME }}"
+
     - name: Find and Download Previous Build Receipt
+      if: ${{ steps.check_previous.outputs.exists == 'true' }}
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "build-receipt.cyclonedx.json"
+        asset_pattern: "${{ env.BUILD_RECEIPT_FILENAME }}"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/previous-build-receipt.cyclonedx.json"
+        output_path: "/github/workspace/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous Run Receipt
+      if: ${{ steps.check_previous.outputs.exists == 'true' }}
       uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
-        asset_pattern: "run-receipt.cyclonedx.json"
+        asset_pattern: "${{ env.RUN_RECEIPT_FILENAME }}"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/previous-run-receipt.cyclonedx.json"
+        output_path: "/github/workspace/previous-${{ env.RUN_RECEIPT_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Compare Build Packages
       id: build_diff
       uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
       with:
-        previous: "/github/workspace/previous-build-receipt.cyclonedx.json"
-        current: "/github/workspace/build-receipt.cyclonedx.json"
+        previous: "/github/workspace/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
+        current: "/github/workspace/${{ env.BUILD_RECEIPT_FILENAME }}"
 
     - name: Compare Run Packages
       id: run_diff
       uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
       with:
-        previous: "/github/workspace/previous-run-receipt.cyclonedx.json"
-        current: "/github/workspace/run-receipt.cyclonedx.json"
+        previous: "/github/workspace/previous-${{ env.RUN_RECEIPT_FILENAME }}"
+        current: "/github/workspace/${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Fail If Packages Removed
       run: |
@@ -283,9 +307,9 @@ jobs:
     needs: [packages_changed]
     if: ${{ needs.packages_changed.outputs.packages_changed == 'true' }}
     steps:
-      - name: Run if packages changed
-        run: |
-          echo "packages have changed"
+    - name: Run if packages changed
+      run: |
+        echo "packages have changed"
 
   test:
     name: Acceptance Test
@@ -324,9 +348,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{github.event.inputs.force == 'true'}}
     steps:
-      - name: Signal force release creation
-        run: |
-          echo "Force release creation input set to true"
+    - name: Signal force release creation
+      run: |
+        echo "Force release creation input set to true"
 
   release:
     name: Release
@@ -390,7 +414,7 @@ jobs:
         jq . <<< "${USNS}" > "${USNS_PATH}"
         echo "::set-output name=usns::${USNS_PATH}"
       env:
-        USNS_PATH: "patched-usns.json"
+        USNS_PATH: "${{ env.PATCHED_USNS_FILENAME }}"
         USNS: ${{ needs.poll_usns.outputs.usns }}
 
     - name: Create Release Notes
@@ -439,18 +463,18 @@ jobs:
               "content_type": "application/gzip"
             },
             {
-              "path": "build-receipt.cyclonedx.json",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.cyclonedx.json",
+              "path": "${{ env.BUILD_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
-              "path": "run-receipt.cyclonedx.json",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.cyclonedx.json",
+              "path": "${{ env.RUN_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
               "path": "${{ steps.write_usns.outputs.usns }}",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.PATCHED_USNS_FILENAME }}",
               "content_type": "text/plain"
             }
           ]
@@ -479,13 +503,13 @@ jobs:
               "content_type": "application/gzip"
             },
             {
-              "path": "build-receipt.cyclonedx.json",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.cyclonedx.json",
+              "path": "${{ env.BUILD_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
-              "path": "run-receipt.cyclonedx.json",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.cyclonedx.json",
+              "path": "${{ env.RUN_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             }
           ]
