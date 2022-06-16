@@ -34,7 +34,7 @@ jobs:
     steps:
     - name: Find and Download Previous Build Receipt
       id: previous_build
-      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "${{ env.BUILD_RECEIPT_FILENAME }}"
         search_depth: 1
@@ -44,7 +44,7 @@ jobs:
 
     - name: Find and Download Previous Run Receipt
       id: previous_run
-      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "${{ env.RUN_RECEIPT_FILENAME }}"
         search_depth: 1
@@ -54,16 +54,15 @@ jobs:
 
     - name: Get Package List
       id: packages
-      # TODO: Switch repo name below
       if: ${{ steps.previous_build.outputs.output_path != '' && steps.previous_run.outputs.output_path != '' }}
-      uses: fg-j/jammy-tiny-stack/actions/generate-package-list@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/generate-package-list@main
       with:
         build_receipt: "${{ github.workspace }}/${{ env.BUILD_RECEIPT_FILENAME }}"
         run_receipt: "${{ github.workspace }}/${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Find and Download Previous Patched USNs
       id: download_patched
-      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "${{ env.PATCHED_USNS_FILENAME }}"
         search_depth: "-1"   # Search all releases
@@ -73,7 +72,6 @@ jobs:
 
     - name: Output Patched USNs as JSON String
       id: patched
-      # TODO: Switch repo name below
       if: ${{ steps.download_patched.outputs.output_path != '' }}
       run: |
         patched=$(jq --compact-output . < "${GITHUB_WORKSPACE}/${{ env.PATCHED_USNS_FILENAME }}")
@@ -81,8 +79,7 @@ jobs:
 
     - name: Get New USNs
       id: usns
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/get-usns@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/get-usns@main
       with:
         distribution: 'jammy'
         packages: ${{ steps.packages.outputs.packages }}
@@ -213,7 +210,7 @@ jobs:
 
     - name: Find and Download Previous Build Receipt
       if: ${{ steps.check_previous.outputs.exists == 'true' }}
-      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "${{ env.BUILD_RECEIPT_FILENAME }}"
         search_depth: 1
@@ -223,7 +220,7 @@ jobs:
 
     - name: Find and Download Previous Run Receipt
       if: ${{ steps.check_previous.outputs.exists == 'true' }}
-      uses: fg-j/jammy-tiny-stack/actions/find-and-download-asset@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-and-download-asset@main
       with:
         asset_pattern: "${{ env.RUN_RECEIPT_FILENAME }}"
         search_depth: 1
@@ -233,14 +230,14 @@ jobs:
 
     - name: Compare Build Packages
       id: build_diff
-      uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/diff-package-receipts@main
       with:
         previous: "/github/workspace/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
         current: "/github/workspace/${{ env.BUILD_RECEIPT_FILENAME }}"
 
     - name: Compare Run Packages
       id: run_diff
-      uses: fg-j/jammy-tiny-stack/actions/diff-package-receipts@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/diff-package-receipts@main
       with:
         previous: "/github/workspace/previous-${{ env.RUN_RECEIPT_FILENAME }}"
         current: "/github/workspace/${{ env.RUN_RECEIPT_FILENAME }}"
@@ -419,8 +416,7 @@ jobs:
 
     - name: Create Release Notes
       id: notes
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/release-notes@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/release-notes@main
       with:
         build_image: "paketobuildpacks/build-jammy-tiny:${{ steps.tag.outputs.tag }}"
         run_image: "paketobuildpacks/run-jammy-tiny:${{ steps.tag.outputs.tag }}"

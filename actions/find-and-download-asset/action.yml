@@ -35,8 +35,7 @@ runs:
   steps:
     - name: Find Asset
       id: find
-      # TODO: Switch repo name below
-      uses: fg-j/jammy-tiny-stack/actions/find-release-asset@main
+      uses: paketo-buildpacks/jammy-tiny-stack/actions/find-release-asset@main
       with:
         asset_pattern: ${{ inputs.asset_pattern }}
         search_depth: ${{ inputs.search_depth }}
