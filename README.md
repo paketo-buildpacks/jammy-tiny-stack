@@ -12,8 +12,8 @@ Ideal for:
 This stack's build image is based on Ubuntu Jammy Jellyfish. Its run image does not include a Linux distribution.
 
 - To see the **list of all packages installed** in the build or run image for a given release,
-see the `jammy-tiny-stack-{version}-build-receipt.txt` and 
-`jammy-tiny-stack-{version}-run-receipt.txt` attached to each
+see the `jammy-tiny-stack-{version}-build-receipt.cyclonedx.json` and 
+`jammy-tiny-stack-{version}-run-receipt.cyclonedx.json` attached to each
 [release](https://github.com/paketo-buildpacks/jammy-tiny-stack/releases). For a quick overview
 of the packages you can expect to find, see the [stack descriptor file](stack/stack.toml).
 
