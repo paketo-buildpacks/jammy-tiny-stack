@@ -2,6 +2,7 @@ FROM ubuntu:jammy
 
 ARG sources
 ARG packages
+ARG package_args='--no-install-recommends'
 
 RUN echo "$sources" > /etc/apt/sources.list
 
