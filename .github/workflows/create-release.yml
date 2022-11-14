@@ -34,7 +34,7 @@ jobs:
     steps:
     - name: Find and Download Previous Build Receipt
       id: previous_build
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         asset_pattern: "${{ env.BUILD_RECEIPT_FILENAME }}"
         search_depth: 1
@@ -44,7 +44,7 @@ jobs:
 
     - name: Find and Download Previous Run Receipt
       id: previous_run
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         asset_pattern: "${{ env.RUN_RECEIPT_FILENAME }}"
         search_depth: 1
@@ -55,14 +55,14 @@ jobs:
     - name: Get Package List
       id: packages
       if: ${{ steps.previous_build.outputs.output_path != '' && steps.previous_run.outputs.output_path != '' }}
-      uses: paketo-buildpacks/github-config/actions/stack/generate-package-list@main
+      uses: paketo-buildpacks/github-config/actions/stack/generate-package-list@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         build_receipt: "${{ github.workspace }}/${{ env.BUILD_RECEIPT_FILENAME }}"
         run_receipt: "${{ github.workspace }}/${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Find and Download Previous Patched USNs
       id: download_patched
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         asset_pattern: "${{ env.PATCHED_USNS_FILENAME }}"
         search_depth: "-1"   # Search all releases
@@ -88,7 +88,7 @@ jobs:
 
     - name: Get New USNs
       id: usns
-      uses: paketo-buildpacks/github-config/actions/stack/get-usns@main
+      uses: paketo-buildpacks/github-config/actions/stack/get-usns@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         distribution: ${{ steps.distro.outputs.distro }}
         packages: ${{ steps.packages.outputs.packages }}
@@ -143,7 +143,7 @@ jobs:
 
     - name: Create stack
       id: create-stack
-      uses: paketo-buildpacks/github-config/actions/stack/create-stack@main
+      uses: paketo-buildpacks/github-config/actions/stack/create-stack@6dbcf91859fd1991da0166ee2b113f9ee9109812
 
     - name: Generate Package Receipts
       id: receipts
@@ -223,7 +223,7 @@ jobs:
 
     - name: Find and Download Previous Build Receipt
       if: ${{ steps.check_previous.outputs.exists == 'true' }}
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         asset_pattern: "${{ env.BUILD_RECEIPT_FILENAME }}"
         search_depth: 1
@@ -233,7 +233,7 @@ jobs:
 
     - name: Find and Download Previous Run Receipt
       if: ${{ steps.check_previous.outputs.exists == 'true' }}
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         asset_pattern: "${{ env.RUN_RECEIPT_FILENAME }}"
         search_depth: 1
@@ -243,14 +243,14 @@ jobs:
 
     - name: Compare Build Packages
       id: build_diff
-      uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@main
+      uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         previous: "/github/workspace/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
         current: "/github/workspace/${{ env.BUILD_RECEIPT_FILENAME }}"
 
     - name: Compare Run Packages
       id: run_diff
-      uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@main
+      uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         previous: "/github/workspace/previous-${{ env.RUN_RECEIPT_FILENAME }}"
         current: "/github/workspace/${{ env.RUN_RECEIPT_FILENAME }}"
@@ -423,7 +423,7 @@ jobs:
     - name: Increment Tag
       if: github.event.inputs.version == ''
       id: semver
-      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@main
+      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         allow_head_tagged: true
 
@@ -463,7 +463,7 @@ jobs:
 
     - name: Create Release Notes
       id: notes
-      uses: paketo-buildpacks/github-config/actions/stack/release-notes@main
+      uses: paketo-buildpacks/github-config/actions/stack/release-notes@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         build_image: "paketobuildpacks/build-${{ steps.repo_name.outputs.registry_repo_name }}:${{ steps.tag.outputs.tag }}"
         run_image: "paketobuildpacks/run-${{ steps.repo_name.outputs.registry_repo_name }}:${{ steps.tag.outputs.tag }}"
@@ -523,7 +523,7 @@ jobs:
         printf "assets=%s\n" "${assets}" >> "$GITHUB_OUTPUT"
 
     - name: Create Release
-      uses: paketo-buildpacks/github-config/actions/release/create@main
+      uses: paketo-buildpacks/github-config/actions/release/create@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         repo: ${{ github.repository }}
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
@@ -541,7 +541,7 @@ jobs:
     if: ${{ always() && needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure' || needs.packages_changed.result == 'failure' || needs.stack_files_changed.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@6dbcf91859fd1991da0166ee2b113f9ee9109812
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}
