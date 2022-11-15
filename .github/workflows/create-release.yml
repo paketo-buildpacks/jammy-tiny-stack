@@ -533,23 +533,3 @@ jobs:
         body: ${{ steps.notes.outputs.release_body }}
         draft: false
         assets: ${{ steps.assets.outputs.assets }}
-
-  failure:
-    name: Alert on Failure
-    runs-on: ubuntu-22.04
-    needs: [poll_usns, create_stack, diff, test, release, packages_changed, stack_files_changed]
-    if: ${{ always() && needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure' || needs.packages_changed.result == 'failure' || needs.stack_files_changed.result == 'failure' }}
-    steps:
-    - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        repo: ${{ github.repository }}
-        label: "failure:release"
-        comment_if_exists: true
-        issue_title: "Failure: Create Release workflow"
-        issue_body: |
-          Create Release workflow [failed](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}).
-          Please take a look to ensure CVE patches can be released. (cc @paketo-buildpacks/stacks-maintainers).
-        comment_body: |
-          Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
