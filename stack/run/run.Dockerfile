@@ -3,7 +3,7 @@ FROM ubuntu:jammy AS builder
 ARG packages
 
 RUN apt-get update && \
-  apt-get install -y xz-utils binutils zstd
+  apt-get install -y xz-utils binutils zstd openssl
 
 ADD install-certs.sh .
 
