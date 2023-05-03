@@ -2,7 +2,7 @@ id = "io.buildpacks.stacks.jammy.tiny"
 homepage = "https://github.com/paketo-buildpacks/jammy-tiny-stack"
 maintainer = "Paketo Buildpacks"
 
-platforms = ["linux/amd64"]
+platforms = ["linux/amd64", "linux/arm64"]
 
 [build]
   description = "ubuntu:jammy with compilers and shell utilities"
@@ -12,6 +12,8 @@ platforms = ["linux/amd64"]
   uid = 1001
 
   [build.args]
+    architecture = "amd64"
+
     sources = """
     deb http://archive.ubuntu.com/ubuntu jammy main universe multiverse
     deb http://archive.ubuntu.com/ubuntu jammy-updates main universe multiverse
@@ -34,6 +36,15 @@ platforms = ["linux/amd64"]
     zlib1g-dev \
     """
 
+  [build.platforms."linux/arm64".args]
+    architecture = "arm64"
+
+    sources = """
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main universe multiverse
+    """
+
 [run]
   description = "distroless-like jammy"
   dockerfile = "./run/run.Dockerfile"
@@ -42,6 +53,8 @@ platforms = ["linux/amd64"]
   uid = 1002
 
   [run.args]
+    architecture = "amd64"
+
     packages = """\
     base-files \
     ca-certificates \
@@ -51,4 +64,13 @@ platforms = ["linux/amd64"]
     openssl \
     tzdata \
     zlib1g \
+    """
+
+  [run.platforms."linux/arm64".args]
+    architecture = "arm64"
+
+    sources = """
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main universe multiverse
     """
