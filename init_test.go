@@ -31,10 +31,10 @@ func TestAcceptance(t *testing.T) {
 	Expect(err).ToNot(HaveOccurred())
 
 	stack.BuildArchive = filepath.Join(root, "build", "build.oci")
-	stack.BuildImageID = fmt.Sprintf("stack-build-%s", uuid.NewString())
+	stack.BuildImageID = fmt.Sprintf("localhost:8000/stack-build-%s", uuid.NewString())
 
 	stack.RunArchive = filepath.Join(root, "build", "run.oci")
-	stack.RunImageID = fmt.Sprintf("stack-run-%s", uuid.NewString())
+	stack.RunImageID = fmt.Sprintf("localhost:8000/stack-run-%s", uuid.NewString())
 
 	SetDefaultEventuallyTimeout(10 * time.Second)
 

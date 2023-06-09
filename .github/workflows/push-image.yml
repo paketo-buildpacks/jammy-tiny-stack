@@ -42,30 +42,42 @@ jobs:
         # paketo-buildpacks/some-name-stack --> some-name
         echo "name=$(echo "${{ github.repository }}" | sed 's/^.*\///' | sed 's/\-stack$//')" >> "$GITHUB_OUTPUT"
 
+    - name: Docker login docker.io
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.PAKETO_BUILDPACKS_DOCKERHUB_USERNAME }}
+        password: ${{ secrets.PAKETO_BUILDPACKS_DOCKERHUB_PASSWORD }}
+        registry: docker.io
+
+    - name: Docker login gcr.io
+      uses: docker/login-action@v2
+      with:
+        username: _json_key
+        password: ${{ secrets.GCR_PUSH_BOT_JSON_KEY }}
+        registry: gcr.io
+
     - name: Push to DockerHub
       id: push
       env:
-        DOCKERHUB_USERNAME: ${{ secrets.PAKETO_BUILDPACKS_DOCKERHUB_USERNAME }}
-        DOCKERHUB_PASSWORD: ${{ secrets.PAKETO_BUILDPACKS_DOCKERHUB_PASSWORD }}
         DOCKERHUB_ORG: "paketobuildpacks"
-        GCR_USERNAME: _json_key
-        GCR_PASSWORD: ${{ secrets.GCR_PUSH_BOT_JSON_KEY }}
         GCR_PROJECT: "paketo-buildpacks"
       run: |
-        echo "${DOCKERHUB_PASSWORD}" | sudo skopeo login --username "${DOCKERHUB_USERNAME}" --password-stdin index.docker.io
-        echo "${GCR_PASSWORD}" | sudo skopeo login --username "${GCR_USERNAME}" --password-stdin gcr.io
+        # Ensure other scripts can access the .bin directory to install their own
+        # tools after we install them as whatever user we are.
+        mkdir -p ./.bin/
+        chmod 777 ./.bin/
 
-        sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/build.oci" "docker://${DOCKERHUB_ORG}/build-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}"
-        sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/build.oci" "docker://${DOCKERHUB_ORG}/build-${{ steps.registry-repo.outputs.name }}:latest"
-
-        sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/build.oci" "docker://gcr.io/${GCR_PROJECT}/build-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}"
-        sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/build.oci" "docker://gcr.io/${GCR_PROJECT}/build-${{ steps.registry-repo.outputs.name }}:latest"
-
-        sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/run.oci" "docker://${DOCKERHUB_ORG}/run-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}"
-        sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/run.oci" "docker://${DOCKERHUB_ORG}/run-${{ steps.registry-repo.outputs.name }}:latest"
-
-        sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/run.oci" "docker://gcr.io/${GCR_PROJECT}/run-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}"
-        sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/run.oci" "docker://gcr.io/${GCR_PROJECT}/run-${{ steps.registry-repo.outputs.name }}:latest"
+        ./scripts/publish.sh \
+          --build-ref "docker.io/${DOCKERHUB_ORG}/build-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
+          --build-ref "docker.io/${DOCKERHUB_ORG}/build-${{ steps.registry-repo.outputs.name }}:latest" \
+          --build-ref "gcr.io/${GCR_PROJECT}/build-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
+          --build-ref "gcr.io/${GCR_PROJECT}/build-${{ steps.registry-repo.outputs.name }}:latest" \
+          --run-ref "docker.io/${DOCKERHUB_ORG}/run-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
+          --run-ref "docker.io/${DOCKERHUB_ORG}/run-${{ steps.registry-repo.outputs.name }}:latest" \
+          --run-ref "gcr.io/${GCR_PROJECT}/run-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
+          --run-ref "gcr.io/${GCR_PROJECT}/run-${{ steps.registry-repo.outputs.name }}:latest" \
+          --build-archive "${GITHUB_WORKSPACE}/build.oci" \
+          --run-archive "${GITHUB_WORKSPACE}/run.oci"
 
         # If the repository name contains 'bionic', let's push it to legacy image locations as well:
         #    paketobuildpacks/{build/run}:{version}-{variant}
