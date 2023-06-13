@@ -1,1 +1,5 @@
 CODEOWNERS
+workflows/create-release.yml
+workflows/test-pull-request.yml
+workflows/push-image.yml
+../scripts/publish.sh
