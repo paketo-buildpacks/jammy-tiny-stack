@@ -26,6 +26,7 @@ platforms = ["linux/amd64"]
     jq \
     libgmp-dev \
     libssl3 \
+    libssl-dev \
     libyaml-0-2 \
     netbase \
     openssl \
