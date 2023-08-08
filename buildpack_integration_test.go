@@ -53,7 +53,7 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 		docker = occam.NewDocker()
 
 		registry, err = docker.Container.Run.
-			WithPublish("8000:5000").
+			WithPublish(fmt.Sprintf("%d:5000", localRegistryPort)).
 			Execute(REGISTRY_IMAGE)
 		Expect(err).NotTo(HaveOccurred())
 
