@@ -82,7 +82,13 @@ function main() {
   fi
 
   tools::install
-  stack::publish "$build_archive" "$run_archive" "${#build_ref[@]}" "${build_ref[@]}" "${#run_ref[@]}" "${run_ref[@]}"
+  stack::publish \
+    "$build_archive" \
+    "$run_archive" \
+    "${#build_ref[@]}" \
+    "${build_ref[@]}" \
+    "${#run_ref[@]}" \
+    "${run_ref[@]}"
 }
 
 function usage() {
