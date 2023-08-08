@@ -2,7 +2,6 @@ package acceptance_test
 
 import (
 	"fmt"
-	"net"
 	"path/filepath"
 	"testing"
 	"time"
@@ -21,17 +20,8 @@ var stack struct {
 	BuildImageID string
 	RunImageID   string
 }
-var localRegistryPort int
 
 func by(_ string, f func()) { f() }
-
-func getFreePort() (port int, err error) {
-	if l, err := net.Listen("tcp", ":0"); err == nil {
-		defer l.Close()
-		return l.Addr().(*net.TCPAddr).Port, nil
-	}
-	return 0, err
-}
 
 func TestAcceptance(t *testing.T) {
 	format.MaxLength = 0
@@ -40,14 +30,11 @@ func TestAcceptance(t *testing.T) {
 	root, err := filepath.Abs(".")
 	Expect(err).ToNot(HaveOccurred())
 
-	localRegistryPort, err = getFreePort()
-	Expect(err).ToNot(HaveOccurred())
-
 	stack.BuildArchive = filepath.Join(root, "build", "build.oci")
-	stack.BuildImageID = fmt.Sprintf("localhost:%d/stack-build-%s", localRegistryPort, uuid.NewString())
+	stack.BuildImageID = fmt.Sprintf("stack-build-%s", uuid.NewString())
 
 	stack.RunArchive = filepath.Join(root, "build", "run.oci")
-	stack.RunImageID = fmt.Sprintf("localhost:%d/stack-run-%s", localRegistryPort, uuid.NewString())
+	stack.RunImageID = fmt.Sprintf("stack-run-%s", uuid.NewString())
 
 	SetDefaultEventuallyTimeout(10 * time.Second)
 

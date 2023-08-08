@@ -2,7 +2,6 @@ FROM ubuntu:jammy
 
 ARG sources
 ARG packages
-ARG architecture
 ARG package_args='--no-install-recommends'
 
 RUN echo "$sources" > /etc/apt/sources.list && \
@@ -17,5 +16,5 @@ RUN echo "$sources" > /etc/apt/sources.list && \
   apt-get -y $package_args install $packages && \
   rm -rf /var/lib/apt/lists/* /tmp/* /etc/apt/preferences && \
   for path in /workspace /workspace/source-ws /workspace/source; do git config --system --add safe.directory "${path}"; done && \
-  curl -sSfL -o /usr/local/bin/yj "https://github.com/sclevine/yj/releases/latest/download/yj-linux-${architecture}" && \
+  curl -sSfL -o /usr/local/bin/yj https://github.com/sclevine/yj/releases/latest/download/yj-linux-amd64 && \
   chmod +x /usr/local/bin/yj
