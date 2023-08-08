@@ -52,6 +52,7 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 		pack = occam.NewPack().WithVerbose()
 		docker = occam.NewDocker()
 
+		// A registry is needed in order to build and push the multi-arch stack images
 		registry, err = docker.Container.Run.
 			WithPublish(fmt.Sprintf("%d:5000", localRegistryPort)).
 			Execute(REGISTRY_IMAGE)
