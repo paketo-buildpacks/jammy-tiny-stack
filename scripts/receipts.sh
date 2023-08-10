@@ -127,7 +127,7 @@ function receipts::generate::multi::arch() {
   localRegistry="127.0.0.1:$registryPort"
 
   # Push the oci archives to the local registry
-  ${PROG_DIR}/publish.sh \
+  jam publish-stack \
     --build-ref "$localRegistry/build" \
     --build-archive $buildArchive \
     --run-ref "$localRegistry/run" \
@@ -142,7 +142,7 @@ function receipts::generate::multi::arch() {
 
       imageReceipt="${BUILD_DIR}/${imageType}-${imageArch}-${receiptFilename}"
 
-      # Generating the architecture-specific sbom from images in the local registry
+      # Generate the architecture-specific SBOM from image in the local registry
       syft packages "registry:$localRegistry/$imageType" \
         --output cyclonedx-json \
         --file "$imageReceipt" \
