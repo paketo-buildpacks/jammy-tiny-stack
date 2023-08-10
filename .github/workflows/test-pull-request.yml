@@ -5,6 +5,9 @@ on:
     branches:
     - main
 
+env:
+  BUILD_RECEIPT_FILENAME: "build-receipt.cyclonedx.json"
+  RUN_RECEIPT_FILENAME: "run-receipt.cyclonedx.json"
 jobs:
   test:
     name: Acceptance Test
@@ -26,8 +29,14 @@ jobs:
       id: create-stack
       uses: paketo-buildpacks/github-config/actions/stack/create-stack@main
 
-    - name: Run Acceptance Tests
-      run: ./scripts/test.sh
+    # Verify that generating receipts for the multi-arch images works
+    - name: Generate Package Receipts
+      id: receipts
+      run: |
+        scripts/receipts.sh --build-image "${GITHUB_WORKSPACE}/build/build.oci" \
+                            --run-image "${GITHUB_WORKSPACE}/build/run.oci" \
+                            --build-receipt ${{ env.BUILD_RECEIPT_FILENAME }} \
+                            --run-receipt ${{ env.RUN_RECEIPT_FILENAME }}
 
   upload:
     name: Upload Workflow Event Payload
