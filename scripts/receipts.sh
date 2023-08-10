@@ -149,6 +149,22 @@ function receipts::generate::multi::arch() {
 
       imageReceipt="${BUILD_DIR}/${imageType}-${imageArch}-${receiptFilename}"
 
+      ls -ld $GITHUB_WORKSPACE
+      ls -l $GITHUB_WORKSPACE
+
+      ls -ld $STACK_DIR
+      ls -l $STACK_DIR
+
+      ls -ld $BUILD_DIR
+      ls -l $BUILD_DIR
+
+      # touch "$GITHUB_WORKSPACE/testfile1"
+      # touch "$STACK_DIR/testfile2"
+      # touch "$BUILD_DIR/testfile3"
+      
+      # Making the BUILD_DIR writable for all users
+      chmod 777 "$BUILD_DIR"
+
       # Generate the architecture-specific SBOM from image in the local registry
       syft packages "registry:$localRegistry/$imageType" \
         --output cyclonedx-json \
