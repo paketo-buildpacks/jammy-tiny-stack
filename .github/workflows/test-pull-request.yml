@@ -29,9 +29,6 @@ jobs:
       id: create-stack
       uses: paketo-buildpacks/github-config/actions/stack/create-stack@main
 
-    - name: Run Acceptance Tests
-      run: ./scripts/test.sh
-
     # Verify that generating receipts for the multi-arch images works
     - name: Generate Package Receipts
       id: receipts
@@ -40,6 +37,9 @@ jobs:
                             --run-image "${GITHUB_WORKSPACE}/build/run.oci" \
                             --build-receipt ${{ env.BUILD_RECEIPT_FILENAME }} \
                             --run-receipt ${{ env.RUN_RECEIPT_FILENAME }}
+
+    - name: Run Acceptance Tests
+      run: ./scripts/test.sh
 
   upload:
     name: Upload Workflow Event Payload

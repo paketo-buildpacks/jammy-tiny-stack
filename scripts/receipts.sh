@@ -8,6 +8,10 @@ readonly STACK_DIR="$(cd "${PROG_DIR}/.." && pwd)"
 readonly BIN_DIR="${STACK_DIR}/.bin"
 readonly BUILD_DIR="${STACK_DIR}/build"
 
+echo "PROG_DIR=$PROG_DIR"
+echo "STACK_DIR=$STACK_DIR"
+echo "BUILD_DIR=$BUILD_DIR"
+
 # shellcheck source=SCRIPTDIR/.util/tools.sh
 source "${PROG_DIR}/.util/tools.sh"
 
@@ -62,7 +66,7 @@ function main() {
 
   tools::install
 
-  # We are generating receipts for all platforms but copying the amd64 receipts as $buildReceipt and $buildReceipt
+  # We are generating receipts for all platforms but copying the amd64 receipts as $buildReceipt and $runReceipt
   receipts::generate::multi::arch "${build}" "${run}"
 
   receipts=$(find $BUILD_DIR -type f -name "*${receiptFilename}" | sed 's/^/  /g')
@@ -111,6 +115,8 @@ function receipts::generate() {
 # Generates syft receipts for each architecture for given oci archives
 function receipts::generate::multi::arch() {
   local buildArchive runArchive registryPort registryPid localRegistry imageType archiveName imageReceipt
+
+  set -x
 
   buildArchive="${1}"
   runArchive="${2}"
