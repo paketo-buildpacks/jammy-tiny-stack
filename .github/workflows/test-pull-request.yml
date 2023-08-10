@@ -29,6 +29,9 @@ jobs:
       id: create-stack
       uses: paketo-buildpacks/github-config/actions/stack/create-stack@main
 
+    - name: Run Acceptance Tests
+      run: ./scripts/test.sh
+
     # Verify that generating receipts for the multi-arch images works
     - name: Generate Package Receipts
       id: receipts
