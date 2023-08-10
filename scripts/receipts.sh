@@ -90,9 +90,11 @@ USAGE
 }
 
 function tools::install() {
-  util::tools::syft::install \
-    --directory "${BIN_DIR}"
   util::tools::crane::install \
+    --directory "${BIN_DIR}"
+  util::tools::jam::install \
+    --directory "${BIN_DIR}"
+  util::tools::syft::install \
     --directory "${BIN_DIR}"
 }
 
@@ -115,16 +117,17 @@ function receipts::generate::multi::arch() {
   buildArchive="${1}"
   runArchive="${2}"
 
-  # This is hard-coded, but a random port could be obtained if needed
-  registryPort=54321
+  registryPort=$(get::random::port)
+  localRegistry="127.0.0.1:$registryPort"
 
   # Start a local in-memory registry so we can work with the oci archives
   PORT=$registryPort crane registry serve --insecure > /dev/null 2>&1 &
   registryPid=$!
 
-  sleep 2
-
-  localRegistry="127.0.0.1:$registryPort"
+  # Wait for the registry to be available
+  until crane catalog $localRegistry > /dev/null 2>&1; do
+    sleep 1
+  done
 
   # Push the oci archives to the local registry
   jam publish-stack \
@@ -161,6 +164,17 @@ function receipts::generate::multi::arch() {
   done
 
   kill $registryPid
+}
+
+# Returns a random unused port
+function get::random::port() {
+  local port=$(shuf -i 50000-65000 -n 1)
+  netstat -lat | grep $port > /dev/null
+  if [[ $? == 1 ]] ; then
+    echo $port
+  else
+    echo get::random::port
+  fi
 }
 
 main "${@:-}"
