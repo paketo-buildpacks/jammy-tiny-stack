@@ -162,8 +162,13 @@ function receipts::generate::multi::arch() {
       # touch "$STACK_DIR/testfile2"
       # touch "$BUILD_DIR/testfile3"
       
-      # Making the BUILD_DIR writable for all users
-      chmod 777 "$BUILD_DIR"
+      # Ensure we can write to the BUILD_DIR
+      if [ $(stat -c %u build) = "0" ]; then
+        sudo chown -R "$(id -u):$(id -g)" "$BUILD_DIR"
+      fi
+
+      ls -ld $BUILD_DIR
+      ls -l $BUILD_DIR
 
       # Generate the architecture-specific SBOM from image in the local registry
       syft packages "registry:$localRegistry/$imageType" \
