@@ -117,8 +117,6 @@ function receipts::generate() {
 function receipts::generate::multi::arch() {
   local buildArchive runArchive registryPort registryPid localRegistry imageType archiveName imageReceipt
 
-  set -x
-
   buildArchive="${1}"
   runArchive="${2}"
 
@@ -139,6 +137,11 @@ function receipts::generate::multi::arch() {
     --build-archive $buildArchive \
     --run-ref "$localRegistry/run" \
     --run-archive $runArchive
+  
+  # Ensure we can write to the BUILD_DIR
+  if [ $(stat -c %u build) = "0" ]; then
+    sudo chown -R "$(id -u):$(id -g)" "$BUILD_DIR"
+  fi
 
   for imageType in build run; do
     archiveName="${imageType}.oci"
@@ -148,27 +151,6 @@ function receipts::generate::multi::arch() {
       util::print::info "Generating CycloneDX package SBOM using syft for $archiveName on platform linux/$imageArch"
 
       imageReceipt="${BUILD_DIR}/${imageType}-${imageArch}-${receiptFilename}"
-
-      ls -ld $GITHUB_WORKSPACE
-      ls -l $GITHUB_WORKSPACE
-
-      ls -ld $STACK_DIR
-      ls -l $STACK_DIR
-
-      ls -ld $BUILD_DIR
-      ls -l $BUILD_DIR
-
-      # touch "$GITHUB_WORKSPACE/testfile1"
-      # touch "$STACK_DIR/testfile2"
-      # touch "$BUILD_DIR/testfile3"
-      
-      # Ensure we can write to the BUILD_DIR
-      if [ $(stat -c %u build) = "0" ]; then
-        sudo chown -R "$(id -u):$(id -g)" "$BUILD_DIR"
-      fi
-
-      ls -ld $BUILD_DIR
-      ls -l $BUILD_DIR
 
       # Generate the architecture-specific SBOM from image in the local registry
       syft packages "registry:$localRegistry/$imageType" \
