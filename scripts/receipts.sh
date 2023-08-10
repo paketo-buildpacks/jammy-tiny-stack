@@ -8,6 +8,7 @@ readonly STACK_DIR="$(cd "${PROG_DIR}/.." && pwd)"
 readonly BIN_DIR="${STACK_DIR}/.bin"
 readonly BUILD_DIR="${STACK_DIR}/build"
 
+echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
 echo "PROG_DIR=$PROG_DIR"
 echo "STACK_DIR=$STACK_DIR"
 echo "BUILD_DIR=$BUILD_DIR"
