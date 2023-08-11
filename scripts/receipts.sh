@@ -98,36 +98,16 @@ function tools::install() {
     --directory "${BIN_DIR}"
 }
 
-function receipts::generate() {
-  local image output
-
-  image="${1}"
-  output="${2}"
-
-  util::print::title "Generating package SBOM for ${image}"
-
-  util::print::info "Generating CycloneDX package SBOM using syft"
-  syft packages "${image}" --output cyclonedx-json --file "${output}"
-}
-
 # Generates syft receipts for each architecture for given oci archives
 function receipts::generate::multi::arch() {
   local buildArchive runArchive registryPort registryPid localRegistry imageType archiveName imageReceipt
 
   buildArchive="${1}"
   runArchive="${2}"
-
+  
   registryPort=$(get::random::port)
+  registryPid=$(local::registry::start $registryPort)
   localRegistry="127.0.0.1:$registryPort"
-
-  # Start a local in-memory registry so we can work with the oci archives
-  PORT=$registryPort crane registry serve --insecure > /dev/null 2>&1 &
-  registryPid=$!
-
-  # Wait for the registry to be available
-  until crane catalog $localRegistry > /dev/null 2>&1; do
-    sleep 1
-  done
 
   # Push the oci archives to the local registry
   jam publish-stack \
@@ -135,7 +115,7 @@ function receipts::generate::multi::arch() {
     --build-archive $buildArchive \
     --run-ref "$localRegistry/run" \
     --run-archive $runArchive
-  
+
   # Ensure we can write to the BUILD_DIR
   if [ $(stat -c %u build) = "0" ]; then
     sudo chown -R "$(id -u):$(id -g)" "$BUILD_DIR"
@@ -175,6 +155,28 @@ function get::random::port() {
   else
     echo get::random::port
   fi
+}
+
+# Starts a local registry on the given port and returns the pid
+function local::registry::start() {
+  local registryPort registryPid localRegistry
+
+  registryPort="$1"
+  localRegistry="127.0.0.1:$registryPort"
+
+  # Start a local in-memory registry so we can work with oci archives
+  PORT=$registryPort crane registry serve --insecure > /dev/null 2>&1 &
+  registryPid=$!
+
+  # Stop the registry if execution is interrupted
+  trap "kill $registryPid" 1 2 3 6
+
+  # Wait for the registry to be available
+  until crane catalog $localRegistry > /dev/null 2>&1; do
+    sleep 1
+  done
+
+  echo $registryPid
 }
 
 main "${@:-}"
