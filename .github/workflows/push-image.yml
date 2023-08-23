@@ -4,6 +4,11 @@ on:
   release:
     types:
     - published
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version of the stack to push'
+        required: false
 
 jobs:
   push:
@@ -14,7 +19,11 @@ jobs:
     - name: Parse Event
       id: event
       run: |
-        echo "tag=$(jq -r '.release.tag_name' "${GITHUB_EVENT_PATH}" | sed s/^v//)" >> "$GITHUB_OUTPUT"
+        if ${{ github.event.inputs.version }} == ''; then
+          echo "tag=$(jq -r '.release.tag_name' "${GITHUB_EVENT_PATH}" | sed s/^v//)" >> "$GITHUB_OUTPUT"
+        else
+          echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+        fi
         echo "build_download_url=$(jq -r '.release.assets[] | select(.name | endswith("build.oci")) | .url' "${GITHUB_EVENT_PATH}")" >> "$GITHUB_OUTPUT"
         echo "run_download_url=$(jq -r '.release.assets[] | select(.name | endswith("run.oci")) | .url' "${GITHUB_EVENT_PATH}")" >> "$GITHUB_OUTPUT"
 
@@ -26,15 +35,33 @@ jobs:
 
     - name: Download Build Image
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      if: github.event.inputs.version == ''
       with:
         url: ${{ steps.event.outputs.build_download_url }}
         output: "/github/workspace/build.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
+    - name: Download Build Image Manually
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      if: github.event.inputs.version != ''
+      with:
+        url: "https://github.com/${{ github.repository }}/releases/download/v${{ github.event.inputs.version }}/${{ github.event.repository.name }}-${{ github.event.inputs.version }}-build.oci"
+        output: "/github/workspace/build.oci"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
     - name: Download Run Image
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      if: github.event.inputs.version == ''
       with:
         url: ${{ steps.event.outputs.run_download_url }}
+        output: "/github/workspace/run.oci"
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    - name: Download Run Image Manually
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      if: github.event.inputs.version != ''
+      with:
+        url: "https://github.com/${{ github.repository }}/releases/download/v${{ github.event.inputs.version }}/${{ github.event.repository.name }}-${{ github.event.inputs.version }}-run.oci"
         output: "/github/workspace/run.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
