@@ -21,6 +21,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
     - name: Download Build Image
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
@@ -70,14 +73,20 @@ jobs:
         ./scripts/publish.sh \
           --build-ref "docker.io/${DOCKERHUB_ORG}/build-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
           --build-ref "docker.io/${DOCKERHUB_ORG}/build-${{ steps.registry-repo.outputs.name }}:latest" \
-          --build-ref "gcr.io/${GCR_PROJECT}/build-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
-          --build-ref "gcr.io/${GCR_PROJECT}/build-${{ steps.registry-repo.outputs.name }}:latest" \
           --run-ref "docker.io/${DOCKERHUB_ORG}/run-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
           --run-ref "docker.io/${DOCKERHUB_ORG}/run-${{ steps.registry-repo.outputs.name }}:latest" \
-          --run-ref "gcr.io/${GCR_PROJECT}/run-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
-          --run-ref "gcr.io/${GCR_PROJECT}/run-${{ steps.registry-repo.outputs.name }}:latest" \
           --build-archive "${GITHUB_WORKSPACE}/build.oci" \
           --run-archive "${GITHUB_WORKSPACE}/run.oci"
+
+        for imageType in build run; do
+          echo "FROM docker.io/${DOCKERHUB_ORG}/${imageType}-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" | \
+          docker buildx build -f - . \
+            --tag "gcr.io/${GCR_PROJECT}/${imageType}-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}" \
+            --tag "gcr.io/${GCR_PROJECT}/${imageType}-${{ steps.registry-repo.outputs.name }}:latest" \
+            --platform linux/amd64,linux/arm64 \
+            --provenance=false \
+            --push
+        done
 
         # If the repository name contains 'bionic', let's push it to legacy image locations as well:
         #    paketobuildpacks/{build/run}:{version}-{variant}
