@@ -33,6 +33,9 @@ jobs:
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
 
+    - name: Set up buildx
+      uses: docker/setup-buildx-action@v2
+
     - name: Download Build Image
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       if: github.event.inputs.version == ''
