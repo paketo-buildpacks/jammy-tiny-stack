@@ -22,7 +22,7 @@ jobs:
         set -euo pipefail
         shopt -s inherit_errexit
 
-        if [[ ${{ github.event.inputs.version }} == '' ]]; then
+        if [[ "${{ github.event.inputs.version }}" == '' ]]; then
           echo "tag=$(jq -r '.release.tag_name' "${GITHUB_EVENT_PATH}" | sed s/^v//)" >> "$GITHUB_OUTPUT"
         else
           echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
