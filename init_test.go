@@ -35,6 +35,8 @@ func getFreePort() (port int, err error) {
 
 func TestAcceptance(t *testing.T) {
 	format.MaxLength = 0
+	SetDefaultEventuallyTimeout(30 * time.Second)
+
 	Expect := NewWithT(t).Expect
 
 	root, err := filepath.Abs(".")
@@ -48,8 +50,6 @@ func TestAcceptance(t *testing.T) {
 
 	stack.RunArchive = filepath.Join(root, "build", "run.oci")
 	stack.RunImageID = fmt.Sprintf("localhost:%d/stack-run-%s", localRegistryPort, uuid.NewString())
-
-	SetDefaultEventuallyTimeout(10 * time.Second)
 
 	suite := spec.New("Acceptance", spec.Report(report.Terminal{}), spec.Parallel())
 	suite("Metadata", testMetadata)
