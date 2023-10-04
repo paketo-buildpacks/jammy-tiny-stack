@@ -31,8 +31,6 @@ function util::tools::arch() {
     amd64|x86_64)
       if [[ "${1:-}" == "--blank-amd64" ]]; then
         echo ""
-      elif [[ "${1:-}" == "--uname-format-amd64" ]]; then
-        echo "x86_64"
       else
         echo "amd64"
       fi
@@ -51,57 +49,6 @@ function util::tools::path::export() {
   if ! echo "${PATH}" | grep -q "${dir}"; then
     PATH="${dir}:$PATH"
     export PATH
-  fi
-}
-
-function util::tools::crane::install() {
-  local dir token
-  token=""
-
-  while [[ "${#}" != 0 ]]; do
-    case "${1}" in
-      --directory)
-        dir="${2}"
-        shift 2
-        ;;
-
-      --token)
-        token="${2}"
-        shift 2
-        ;;
-
-      *)
-        util::print::error "unknown argument \"${1}\""
-    esac
-  done
-
-  mkdir -p "${dir}"
-  util::tools::path::export "${dir}"
-
-  if [[ ! -f "${dir}/crane" ]]; then
-    local version curl_args os arch
-
-    version="$(jq -r .crane "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
-
-    curl_args=(
-      "--fail"
-      "--silent"
-      "--location"
-    )
-
-    if [[ "${token}" != "" ]]; then
-      curl_args+=("--header" "Authorization: Token ${token}")
-    fi
-
-    util::print::title "Installing crane ${version}"
-
-    os=$(util::tools::os)
-    arch=$(util::tools::arch --uname-format-amd64)
-
-    curl "https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_Linux_${arch}.tar.gz" \
-      "${curl_args[@]}" | tar -C "${dir}" -xz crane
-
-    chmod +x "${dir}/crane"
   fi
 }
 
