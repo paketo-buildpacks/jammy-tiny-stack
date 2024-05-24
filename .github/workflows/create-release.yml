@@ -447,7 +447,7 @@ jobs:
     name: Release
     runs-on: ubuntu-22.04
     needs: [poll_usns, create_stack, diff, test, force_release_creation ]
-    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.run_if_packages_changed.result == 'success' || needs.run_if_stack_files_changed.result == 'success' || needs.force_release_creation.result == 'success' ) }}
+    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.diff.outputs.packages_changed == 'true' || needs.run_if_stack_files_changed.result == 'success' || needs.force_release_creation.result == 'success' ) }}
     steps:
     - name: Print Release Reasoning
       run: |
