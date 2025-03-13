@@ -21,7 +21,7 @@ RUN apt download $packages \
     && for pkg in $packages; do \
       dpkg-deb --field $pkg*.deb > /tiny/var/lib/dpkg/status.d/$pkg \
       && dpkg-deb --extract $pkg*.deb /tiny \
-      && dpkg-deb -c $pkg*.deb | sed 's| -> .*||' | awk '{print $NF}' | sed 's|^\./|/|' > /tiny/var/lib/dpkg/info/$pkg.list; \
+      && dpkg-deb -c $pkg*.deb | sed 's| -> .*||' | awk '{print $NF}' | sed 's|^\./|/|' | sed 's|^/$|/.|g' > /tiny/var/lib/dpkg/info/$pkg.list; \
     done
 
 RUN ./install-certs.sh
