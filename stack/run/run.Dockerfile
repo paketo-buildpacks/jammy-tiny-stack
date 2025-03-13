@@ -11,7 +11,7 @@ ADD files/passwd /tiny/etc/passwd
 ADD files/nsswitch.conf /tiny/etc/nsswitch.conf
 ADD files/group /tiny/etc/group
 
-RUN mkdir -p /tiny/tmp /tiny/var/lib/dpkg/status.d/
+RUN mkdir -p /tiny/tmp /tiny/var/lib/dpkg/status.d/ /tiny/var/lib/dpkg/info/
 RUN echo "Package: $packages\nPin: release c=multiverse\nPin-Priority: -1\n\nPackage: $packages\nPin: release c=restricted\nPin-Priority: -1\n" > /etc/apt/preferences
 
 # We can't use dpkg -i (even with --instdir=/tiny) because we don't want to
