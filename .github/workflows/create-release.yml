@@ -2,7 +2,7 @@ name: Create Release
 
 on:
   schedule:
-  - cron: '*/30 * * * *'  # every 30 minutes
+  - cron: '27 2,14 * * *' # daily at 02:27 and 14:27 UTC
   push:
     branches:
     - main
@@ -25,10 +25,16 @@ env:
   BUILD_RECEIPT_FILENAME: "build-receipt.cyclonedx.json"
   RUN_RECEIPT_FILENAME: "run-receipt.cyclonedx.json"
   PATCHED_USNS_FILENAME: "patched-usns.json"
+  BUILD_DIFF_ADDED_FILENAME: "build-diff-added.json"
+  BUILD_DIFF_MODIFIED_FILENAME: "build-diff-modified.json"
+  BUILD_DIFF_REMOVED_FILENAME: "build-diff-removed.json"
+  RUN_DIFF_ADDED_FILENAME: "run-diff-added.json"
+  RUN_DIFF_MODIFIED_FILENAME: "run-diff-modified.json"
+  RUN_DIFF_REMOVED_FILENAME: "run-diff-removed.json"
 jobs:
   get_architectures:
     name: Get Architectures
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       architectures: ${{ steps.lookup.outputs.platforms }}
     steps:
@@ -52,7 +58,7 @@ jobs:
 
   poll_usns:
     name: Poll USNs
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [get_architectures]
     strategy:
       matrix:
@@ -137,20 +143,20 @@ jobs:
         name: "${{ matrix.arch }}-${{ env.PATCHED_USNS_FILENAME }}"
         path: "${{ matrix.arch }}-${{ env.PATCHED_USNS_FILENAME }}"
 
-  stack_files_changed:
-    name: Determine If Stack Files Changed
-    runs-on: ubuntu-22.04
+  create_stack:
+    name: Create Stack
     needs: poll_usns
     if: ${{ ! ( needs.poll_usns.outputs.usns == '[]' && github.event_name == 'schedule' ) }}
-    outputs:
-      stack_files_changed: ${{ steps.compare.outputs.stack_files_changed }}
+    runs-on: ubuntu-24.04
     steps:
-    - name: Checkout With History
+    - name: Checkout
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # gets full history
 
-    - name: Compare With Previous Release
+    # https://github.com/docker/setup-qemu-action
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
+    - name: Determine If Stack Files Changed
       id: compare
       run: |
         # shellcheck disable=SC2046
@@ -165,33 +171,20 @@ jobs:
           echo "stack_files_changed=true" >> "$GITHUB_OUTPUT"
         fi
 
-  run_if_stack_files_changed:
-    name: Run If Stack Files Changed
-    runs-on: ubuntu-22.04
-    needs: [stack_files_changed]
-    if: ${{ needs.stack_files_changed.outputs.stack_files_changed == 'true' }}
-    steps:
-    - name: Run if stack files changed
-      run: |
-        echo "stack files have changed"
-
-  create_stack:
-    name: Create Stack
-    needs: poll_usns
-    if: ${{ ! ( needs.poll_usns.outputs.usns == '[]' && github.event_name == 'schedule' ) }}
-    runs-on: ubuntu-22.04
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    # https://github.com/docker/setup-qemu-action
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
-
     - name: Create stack
       id: create-stack
       run: |
         ./scripts/create.sh
+
+    - name: Generate Package Receipts
+      id: receipts
+      run: |
+        scripts/receipts.sh --build-image "${GITHUB_WORKSPACE}/build/build.oci" \
+                            --run-image "${GITHUB_WORKSPACE}/build/run.oci" \
+                            --build-receipt ${{ env.BUILD_RECEIPT_FILENAME }} \
+                            --run-receipt ${{ env.RUN_RECEIPT_FILENAME }}
+        echo "build_receipt=${{ env.BUILD_RECEIPT_FILENAME }}" >> "$GITHUB_OUTPUT"
+        echo "run_receipt=${{ env.RUN_RECEIPT_FILENAME }}" >> "$GITHUB_OUTPUT"
 
     - name: Upload run image
       uses: actions/upload-artifact@v4
@@ -205,39 +198,25 @@ jobs:
         name: current-build-image
         path: build/build.oci
 
-    - name: Generate Package Receipts
-      id: receipts
-      run: |
-        scripts/receipts.sh --build-image "${GITHUB_WORKSPACE}/build/build.oci" \
-                            --run-image "${GITHUB_WORKSPACE}/build/run.oci" \
-                            --build-receipt ${{ env.BUILD_RECEIPT_FILENAME }} \
-                            --run-receipt ${{ env.RUN_RECEIPT_FILENAME }}
-
     - name: Upload ${{ matrix.arch }} Build receipt(s)
       uses: actions/upload-artifact@v4
       with:
         name: current-build-receipt
-        path: "*${{ env.BUILD_RECEIPT_FILENAME }}"
+        path: ${{ steps.receipts.outputs.build_receipt }}
 
     - name: Upload ${{ matrix.arch }} Run receipt(s)
       uses: actions/upload-artifact@v4
       with:
         name: current-run-receipt
-        path: "*${{ env.RUN_RECEIPT_FILENAME }}"
+        path: ${{ steps.receipts.outputs.run_receipt }}
 
   diff:
     name: Diff Packages (${{ matrix.arch }})
     outputs:
-      build_added: ${{ steps.build_diff.outputs.added }}
-      build_modified: ${{ steps.build_diff.outputs.modified }}
-      build_removed_with_force: ${{ steps.build_diff.outputs.removed }}
-      run_added: ${{ steps.run_diff.outputs.added }}
-      run_modified: ${{ steps.run_diff.outputs.modified }}
-      run_removed_with_force: ${{ steps.run_diff.outputs.removed }}
       removed_with_force: ${{ steps.removed_with_force.outputs.packages_removed }}
       packages_changed: ${{ steps.compare.outputs.packages_changed }}
     needs: [ create_stack, get_architectures ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch: ${{ fromJSON(needs.get_architectures.outputs.architectures) }}
@@ -251,9 +230,6 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: current-run-receipt
-
-    - name: Display structure of downloaded files
-      run: ls -R
 
     - name: Check for Previous Releases
       id: check_previous
@@ -298,23 +274,47 @@ jobs:
       id: build_diff
       uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@main
       with:
-        previous: "/github/workspace/previous-${{ matrix.arch }}-${{ env.BUILD_RECEIPT_FILENAME }}"
-        current: "/github/workspace/${{ matrix.arch }}-${{ env.BUILD_RECEIPT_FILENAME }}"
+        previous: "/github/workspace/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
+        current: "/github/workspace/${{ env.BUILD_RECEIPT_FILENAME }}"
+        added_diff_file: "/github/workspace/${{ env.BUILD_DIFF_ADDED_FILENAME }}"
+        modified_diff_file: "/github/workspace/${{ env.BUILD_DIFF_MODIFIED_FILENAME }}"
+        removed_diff_file: "/github/workspace/${{ env.BUILD_DIFF_REMOVED_FILENAME }}"
+
+    - name: Upload Build Diff Files
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-diff-files
+        path: |
+          ${{ env.BUILD_DIFF_ADDED_FILENAME }}
+          ${{ env.BUILD_DIFF_MODIFIED_FILENAME }}
+          ${{ env.BUILD_DIFF_REMOVED_FILENAME }}
 
     - name: Compare Run Packages
       id: run_diff
       uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@main
       with:
-        previous: "/github/workspace/previous-${{ matrix.arch }}-${{ env.RUN_RECEIPT_FILENAME }}"
-        current: "/github/workspace/${{ matrix.arch }}-${{ env.RUN_RECEIPT_FILENAME }}"
+        previous: "/github/workspace/previous-${{ env.RUN_RECEIPT_FILENAME }}"
+        current: "/github/workspace/${{ env.RUN_RECEIPT_FILENAME }}"
+        added_diff_file: "/github/workspace/${{ env.RUN_DIFF_ADDED_FILENAME }}"
+        modified_diff_file: "/github/workspace/${{ env.RUN_DIFF_MODIFIED_FILENAME }}"
+        removed_diff_file: "/github/workspace/${{ env.RUN_DIFF_REMOVED_FILENAME }}"
+
+    - name: Upload Run Diff Files
+      uses: actions/upload-artifact@v4
+      with:
+        name: run-diff-files
+        path: |
+          ${{ env.RUN_DIFF_ADDED_FILENAME }}
+          ${{ env.RUN_DIFF_MODIFIED_FILENAME }}
+          ${{ env.RUN_DIFF_REMOVED_FILENAME }}
 
     - name: Fail If Packages Removed
       id: removed_with_force
       run: |
-         build=$(jq '. | length' <<< "${BUILD_REMOVED}")
+         build=$(jq '. | length' "${BUILD_REMOVED}")
          echo "Build (${{ matrix.arch }}) packages removed: ${build}"
 
-         run=$(jq '. | length' <<< "${RUN_REMOVED}")
+         run=$(jq '. | length' "${RUN_REMOVED}")
          echo "Run (${{ matrix.arch }}) packages removed: ${run}"
 
          # only fail if packages are removed AND the release has not been forced
@@ -330,25 +330,26 @@ jobs:
            echo "packages_removed=false" >> "$GITHUB_OUTPUT"
          fi
       env:
-        BUILD_REMOVED: ${{ steps.build_diff.outputs.removed }}
-        RUN_REMOVED: ${{ steps.run_diff.outputs.removed }}
-    - name: Compare With Previous Release
+        BUILD_REMOVED: "${{ github.workspace }}/${{ env.BUILD_DIFF_REMOVED_FILENAME }}"
+        RUN_REMOVED: "${{ github.workspace }}/${{ env.RUN_DIFF_REMOVED_FILENAME }}"
+
+    - name: Determine If Packages Changed
       id: compare
       run: |
         # shellcheck disable=SC2153
-        build_added=$(jq '. | length' <<< "${BUILD_ADDED}")
+        build_added=$(jq '. | length' "${BUILD_ADDED}")
         echo "Build packages added: ${build_added}"
 
         # shellcheck disable=SC2153
-        build_modified=$(jq '. | length' <<< "${BUILD_MODIFIED}")
+        build_modified=$(jq '. | length' "${BUILD_MODIFIED}")
         echo "Build packages modified: ${build_modified}"
 
         # shellcheck disable=SC2153
-        run_added=$(jq '. | length' <<< "${RUN_ADDED}")
+        run_added=$(jq '. | length' "${RUN_ADDED}")
         echo "Run packages added: ${run_added}"
 
         # shellcheck disable=SC2153
-        run_modified=$(jq '. | length' <<< "${RUN_MODIFIED}")
+        run_modified=$(jq '. | length' "${RUN_MODIFIED}")
         echo "Run packages modified: ${run_modified}"
 
         if [ "${build_added}" -eq 0 ] && [ "${build_modified}" -eq 0 ] && [ "${run_added}" -eq 0 ] && [ "${run_modified}" -eq 0 ]; then
@@ -358,11 +359,12 @@ jobs:
           echo "Packages changed."
           echo "packages_changed=true" >> "$GITHUB_OUTPUT"
         fi
+
       env:
-        BUILD_ADDED: ${{ steps.build_diff.outputs.added }}
-        BUILD_MODIFIED: ${{ steps.build_diff.outputs.modified }}
-        RUN_ADDED: ${{ steps.run_diff.outputs.added }}
-        RUN_MODIFIED: ${{ steps.run_diff.outputs.modified }}
+        BUILD_ADDED: "${{ github.workspace }}/${{ env.BUILD_DIFF_ADDED_FILENAME }}"
+        BUILD_MODIFIED: "${{ github.workspace }}/${{ env.BUILD_DIFF_MODIFIED_FILENAME }}"
+        RUN_ADDED: "${{ github.workspace }}/${{ env.RUN_DIFF_ADDED_FILENAME }}"
+        RUN_MODIFIED: "${{ github.workspace }}/${{ env.RUN_DIFF_MODIFIED_FILENAME }}"
 
     - name: Get Repository Name
       id: repo_name
@@ -384,12 +386,14 @@ jobs:
       with:
         build_image: "paketobuildpacks/build-${{ steps.repo_name.outputs.registry_repo_name }}"
         run_image: "paketobuildpacks/run-${{ steps.repo_name.outputs.registry_repo_name }}"
-        build_packages_added: ${{ steps.build_diff.outputs.added }}
-        build_packages_modified: ${{ steps.build_diff.outputs.modified }}
-        build_packages_removed_with_force: ${{ steps.build_diff.outputs.removed }}
-        run_packages_added: ${{ steps.run_diff.outputs.added }}
-        run_packages_modified: ${{ steps.run_diff.outputs.modified }}
-        run_packages_removed_with_force: ${{ steps.run_diff.outputs.removed }}
+        build_packages_added: "/github/workspace/${{ env.BUILD_DIFF_ADDED_FILENAME }}"
+        build_packages_modified: "/github/workspace/${{ env.BUILD_DIFF_MODIFIED_FILENAME }}"
+        build_packages_removed_with_force: "/github/workspace/${{ env.BUILD_DIFF_REMOVED_FILENAME }}"
+        run_packages_added: "/github/workspace/${{ env.RUN_DIFF_ADDED_FILENAME }}"
+        run_packages_modified: "/github/workspace/${{ env.RUN_DIFF_MODIFIED_FILENAME }}"
+        run_packages_removed_with_force: "/github/workspace/${{ env.RUN_DIFF_REMOVED_FILENAME }}"
+        patched_usns: ${{ needs.poll_usns.outputs.usns }}
+        release_body_file: "/github/workspace/release-body.md"
 
     - name: Release Notes File
       id: release-notes-file
@@ -405,12 +409,12 @@ jobs:
   test:
     name: Acceptance Test
     needs: [ create_stack ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Setup Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.20.x
+        go-version: 'stable'
 
     - name: Checkout
       uses: actions/checkout@v4
@@ -434,28 +438,19 @@ jobs:
     - name: Run Acceptance Tests
       run: ./scripts/test.sh
 
-  force_release_creation:
-    name: Force Release Creation
-    runs-on: ubuntu-22.04
-    if: ${{github.event.inputs.force == 'true'}}
-    steps:
-    - name: Signal force release creation
-      run: |
-        echo "Force release creation input set to true"
-
   release:
     name: Release
-    runs-on: ubuntu-22.04
-    needs: [poll_usns, create_stack, diff, test, force_release_creation ]
-    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.diff.outputs.packages_changed == 'true' || needs.run_if_stack_files_changed.result == 'success' || needs.force_release_creation.result == 'success' ) }}
+    runs-on: ubuntu-24.04
+    needs: [poll_usns, create_stack, diff, test ]
+    if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && (needs.diff.outputs.packages_changed == 'true' || needs.create_stack.outputs.stack_files_changed == 'true' || github.event.inputs.force == 'true' ) }}
     steps:
     - name: Print Release Reasoning
       run: |
         printf "Diff Packages: %s\n" "${{ needs.diff.result }}"
         printf "Acceptance Tests: %s\n" "${{ needs.test.result }}"
-        printf "Run If Packages Changed: %s\n" "${{ needs.diff.outputs.packages_changed }}"
-        printf "Run If Packages Removed With Force: %s\n" "${{ needs.diff.outputs.removed_with_force }}"
-        printf "Run If Stack Files Changed: %s\n" "${{ needs.run_if_stack_files_changed.result }}"
+        printf "Packages Changed: %s\n" "${{ needs.diff.outputs.packages_changed }}"
+        printf "Packages Removed With Force: %s\n" "${{ needs.diff.outputs.packages_removed }}"
+        printf "Run If Stack Files Changed: %s\n" "${{ needs.create_stack.outputs.stack_files_changed }}"
         printf "Force Release: %s\n" "${{ github.event.inputs.force }}"
 
     - name: Checkout With History
@@ -482,6 +477,16 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: current-run-receipt
+
+    - name: Download Build Diff Files
+      uses: actions/download-artifact@v4
+      with:
+        name: build-diff-files
+
+    - name: Download Run Diff Files
+      uses: actions/download-artifact@v4
+      with:
+        name: run-diff-files
 
     - name: Increment Tag
       if: github.event.inputs.version == ''
@@ -626,9 +631,9 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-22.04
-    needs: [poll_usns, create_stack, diff, test, release, stack_files_changed]
-    if: ${{ always() && needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure' || needs.packages_changed.result == 'failure' || needs.stack_files_changed.result == 'failure' }}
+    runs-on: ubuntu-24.04
+    needs: [poll_usns, create_stack, diff, test, release]
+    if: ${{ always() && needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
       uses: paketo-buildpacks/github-config/actions/issue/file@main
