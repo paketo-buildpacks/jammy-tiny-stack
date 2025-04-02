@@ -25,6 +25,12 @@ env:
   BUILD_RECEIPT_FILENAME: "build-receipt.cyclonedx.json"
   RUN_RECEIPT_FILENAME: "run-receipt.cyclonedx.json"
   PATCHED_USNS_FILENAME: "patched-usns.json"
+  BUILD_DIFF_ADDED_FILENAME: "build-diff-added.json"
+  BUILD_DIFF_MODIFIED_FILENAME: "build-diff-modified.json"
+  BUILD_DIFF_REMOVED_FILENAME: "build-diff-removed.json"
+  RUN_DIFF_ADDED_FILENAME: "run-diff-added.json"
+  RUN_DIFF_MODIFIED_FILENAME: "run-diff-modified.json"
+  RUN_DIFF_REMOVED_FILENAME: "run-diff-removed.json"
 jobs:
   get_architectures:
     name: Get Architectures
@@ -193,6 +199,16 @@ jobs:
       run: |
         ./scripts/create.sh
 
+    - name: Generate Package Receipts
+      id: receipts
+      run: |
+        scripts/receipts.sh --build-image "${GITHUB_WORKSPACE}/build/build.oci" \
+                            --run-image "${GITHUB_WORKSPACE}/build/run.oci" \
+                            --build-receipt ${{ env.BUILD_RECEIPT_FILENAME }} \
+                            --run-receipt ${{ env.RUN_RECEIPT_FILENAME }}
+        echo "build_receipt=${{ env.BUILD_RECEIPT_FILENAME }}" >> "$GITHUB_OUTPUT"
+        echo "run_receipt=${{ env.RUN_RECEIPT_FILENAME }}" >> "$GITHUB_OUTPUT"
+
     - name: Upload run image
       uses: actions/upload-artifact@v4
       with:
@@ -204,14 +220,6 @@ jobs:
       with:
         name: current-build-image
         path: build/build.oci
-
-    - name: Generate Package Receipts
-      id: receipts
-      run: |
-        scripts/receipts.sh --build-image "${GITHUB_WORKSPACE}/build/build.oci" \
-                            --run-image "${GITHUB_WORKSPACE}/build/run.oci" \
-                            --build-receipt ${{ env.BUILD_RECEIPT_FILENAME }} \
-                            --run-receipt ${{ env.RUN_RECEIPT_FILENAME }}
 
     - name: Upload ${{ matrix.arch }} Build receipt(s)
       uses: actions/upload-artifact@v4
@@ -228,12 +236,6 @@ jobs:
   diff:
     name: Diff Packages (${{ matrix.arch }})
     outputs:
-      build_added: ${{ steps.build_diff.outputs.added }}
-      build_modified: ${{ steps.build_diff.outputs.modified }}
-      build_removed_with_force: ${{ steps.build_diff.outputs.removed }}
-      run_added: ${{ steps.run_diff.outputs.added }}
-      run_modified: ${{ steps.run_diff.outputs.modified }}
-      run_removed_with_force: ${{ steps.run_diff.outputs.removed }}
       removed_with_force: ${{ steps.removed_with_force.outputs.packages_removed }}
       packages_changed: ${{ steps.compare.outputs.packages_changed }}
     needs: [ create_stack, get_architectures ]
@@ -300,6 +302,9 @@ jobs:
       with:
         previous: "/github/workspace/previous-${{ matrix.arch }}-${{ env.BUILD_RECEIPT_FILENAME }}"
         current: "/github/workspace/${{ matrix.arch }}-${{ env.BUILD_RECEIPT_FILENAME }}"
+        added_diff_file: "/github/workspace/${{ matrix.arch }}-${{ env.BUILD_DIFF_ADDED_FILENAME }}"
+        modified_diff_file: "/github/workspace/${{ matrix.arch }}-${{ env.BUILD_DIFF_MODIFIED_FILENAME }}"
+        removed_diff_file: "/github/workspace/${{ matrix.arch }}-${{ env.BUILD_DIFF_REMOVED_FILENAME }}"
 
     - name: Compare Run Packages
       id: run_diff
@@ -307,14 +312,17 @@ jobs:
       with:
         previous: "/github/workspace/previous-${{ matrix.arch }}-${{ env.RUN_RECEIPT_FILENAME }}"
         current: "/github/workspace/${{ matrix.arch }}-${{ env.RUN_RECEIPT_FILENAME }}"
+        added_diff_file: "/github/workspace/${{ matrix.arch }}-${{ env.RUN_DIFF_ADDED_FILENAME }}"
+        modified_diff_file: "/github/workspace/${{ matrix.arch }}-${{ env.RUN_DIFF_MODIFIED_FILENAME }}"
+        removed_diff_file: "/github/workspace/${{ matrix.arch }}-${{ env.RUN_DIFF_REMOVED_FILENAME }}"
 
     - name: Fail If Packages Removed
       id: removed_with_force
       run: |
-         build=$(jq '. | length' <<< "${BUILD_REMOVED}")
+         build=$(jq '. | length' "${BUILD_REMOVED}")
          echo "Build (${{ matrix.arch }}) packages removed: ${build}"
 
-         run=$(jq '. | length' <<< "${RUN_REMOVED}")
+         run=$(jq '. | length' "${RUN_REMOVED}")
          echo "Run (${{ matrix.arch }}) packages removed: ${run}"
 
          # only fail if packages are removed AND the release has not been forced
@@ -330,25 +338,26 @@ jobs:
            echo "packages_removed=false" >> "$GITHUB_OUTPUT"
          fi
       env:
-        BUILD_REMOVED: ${{ steps.build_diff.outputs.removed }}
-        RUN_REMOVED: ${{ steps.run_diff.outputs.removed }}
+        BUILD_REMOVED: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.BUILD_DIFF_REMOVED_FILENAME }}"
+        RUN_REMOVED: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.RUN_DIFF_REMOVED_FILENAME }}"
+
     - name: Compare With Previous Release
       id: compare
       run: |
         # shellcheck disable=SC2153
-        build_added=$(jq '. | length' <<< "${BUILD_ADDED}")
+        build_added=$(jq '. | length' "${BUILD_ADDED}")
         echo "Build packages added: ${build_added}"
 
         # shellcheck disable=SC2153
-        build_modified=$(jq '. | length' <<< "${BUILD_MODIFIED}")
+        build_modified=$(jq '. | length' "${BUILD_MODIFIED}")
         echo "Build packages modified: ${build_modified}"
 
         # shellcheck disable=SC2153
-        run_added=$(jq '. | length' <<< "${RUN_ADDED}")
+        run_added=$(jq '. | length' "${RUN_ADDED}")
         echo "Run packages added: ${run_added}"
 
         # shellcheck disable=SC2153
-        run_modified=$(jq '. | length' <<< "${RUN_MODIFIED}")
+        run_modified=$(jq '. | length' "${RUN_MODIFIED}")
         echo "Run packages modified: ${run_modified}"
 
         if [ "${build_added}" -eq 0 ] && [ "${build_modified}" -eq 0 ] && [ "${run_added}" -eq 0 ] && [ "${run_modified}" -eq 0 ]; then
@@ -359,10 +368,10 @@ jobs:
           echo "packages_changed=true" >> "$GITHUB_OUTPUT"
         fi
       env:
-        BUILD_ADDED: ${{ steps.build_diff.outputs.added }}
-        BUILD_MODIFIED: ${{ steps.build_diff.outputs.modified }}
-        RUN_ADDED: ${{ steps.run_diff.outputs.added }}
-        RUN_MODIFIED: ${{ steps.run_diff.outputs.modified }}
+        BUILD_ADDED: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.BUILD_DIFF_ADDED_FILENAME }}"
+        BUILD_MODIFIED: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.BUILD_DIFF_MODIFIED_FILENAME }}"
+        RUN_ADDED: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.RUN_DIFF_ADDED_FILENAME }}"
+        RUN_MODIFIED: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.RUN_DIFF_MODIFIED_FILENAME }}"
 
     - name: Get Repository Name
       id: repo_name
@@ -384,12 +393,14 @@ jobs:
       with:
         build_image: "paketobuildpacks/build-${{ steps.repo_name.outputs.registry_repo_name }}"
         run_image: "paketobuildpacks/run-${{ steps.repo_name.outputs.registry_repo_name }}"
-        build_packages_added: ${{ steps.build_diff.outputs.added }}
-        build_packages_modified: ${{ steps.build_diff.outputs.modified }}
-        build_packages_removed_with_force: ${{ steps.build_diff.outputs.removed }}
-        run_packages_added: ${{ steps.run_diff.outputs.added }}
-        run_packages_modified: ${{ steps.run_diff.outputs.modified }}
-        run_packages_removed_with_force: ${{ steps.run_diff.outputs.removed }}
+        build_packages_added: "/github/workspace/${{ matrix.arch }}-${{ env.BUILD_DIFF_ADDED_FILENAME }}"
+        build_packages_modified: "/github/workspace/${{ matrix.arch }}-${{ env.BUILD_DIFF_MODIFIED_FILENAME }}"
+        build_packages_removed_with_force: "/github/workspace/${{ matrix.arch }}-${{ env.BUILD_DIFF_REMOVED_FILENAME }}"
+        run_packages_added: "/github/workspace/${{ matrix.arch }}-${{ env.RUN_DIFF_ADDED_FILENAME }}"
+        run_packages_modified: "/github/workspace/${{ matrix.arch }}-${{ env.RUN_DIFF_MODIFIED_FILENAME }}"
+        run_packages_removed_with_force: "/github/workspace/${{ matrix.arch }}-${{ env.RUN_DIFF_REMOVED_FILENAME }}"
+        patched_usns: ${{ needs.poll_usns.outputs.usns }}
+        release_body_file: "/github/workspace/release-body.md"
 
     - name: Release Notes File
       id: release-notes-file
@@ -410,7 +421,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: stable
+        go-version: 'stable'
 
     - name: Checkout
       uses: actions/checkout@v4
