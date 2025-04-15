@@ -11,7 +11,7 @@ ADD files/passwd /tiny/etc/passwd
 ADD files/nsswitch.conf /tiny/etc/nsswitch.conf
 ADD files/group /tiny/etc/group
 
-RUN mkdir -p /tiny/tmp /tiny/var/lib/dpkg/status.d/
+RUN mkdir -p /tiny/tmp /tiny/var/lib/dpkg/status.d/ /tiny/var/lib/dpkg/info/
 RUN echo "Package: $packages\nPin: release c=multiverse\nPin-Priority: -1\n\nPackage: $packages\nPin: release c=restricted\nPin-Priority: -1\n" > /etc/apt/preferences
 
 # We can't use dpkg -i (even with --instdir=/tiny) because we don't want to
@@ -20,7 +20,12 @@ RUN echo "Package: $packages\nPin: release c=multiverse\nPin-Priority: -1\n\nPac
 RUN apt download $packages \
     && for pkg in $packages; do \
       dpkg-deb --field $pkg*.deb > /tiny/var/lib/dpkg/status.d/$pkg \
-      && dpkg-deb --extract $pkg*.deb /tiny; \
+      && dpkg-deb --extract $pkg*.deb /tiny \
+      && dpkg-deb -c $pkg*.deb | \
+        sed -e 's| -> .*||' \
+            -e 's|.* ||p' | \
+        sed -e 's|^\./|/|' \
+            -e 's|^/$|/.|' > /tiny/var/lib/dpkg/info/$pkg.list; \
     done
 
 RUN ./install-certs.sh
