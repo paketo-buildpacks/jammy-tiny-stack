@@ -1,0 +1,20 @@
+{
+  "support_usns": true,
+  "receipts_show_limit": 16,
+  "platforms": ["linux/amd64", "linux/arm64"],
+  "os_name": "ubuntu",
+  "os_codename": "jammy",
+  "images": [
+    {
+      "name": "jammy-tiny",
+      "config_dir": "stacks/stack",
+      "output_dir": "builds/stack",
+      "build_image": "build",
+      "run_image": "run",
+      "build_receipt_filename": "build-receipt.cyclonedx.json",
+      "run_receipt_filename": "run-receipt.cyclonedx.json",
+      "create_build_image": true,
+      "stack_type": "tiny"
+    }
+  ]
+}
