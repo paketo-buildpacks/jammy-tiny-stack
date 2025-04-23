@@ -2,7 +2,7 @@ name: Create Release
 
 on:
   schedule:
-  - cron: '*/30 * * * *'  # every 30 minutes
+    - cron: '27 2,14 * * *' # daily at 02:27 and 14:27 UTC
   push:
     branches:
     - main
@@ -22,7 +22,7 @@ on:
 
 concurrency: release
 env:
-  STACKS_FILEPATH: "stacks/images.json"
+  STACKS_FILEPATH: "images.json"
   PATCHED_USNS_FILENAME: "patched-usns.json"
 jobs:
   preparation:
