@@ -24,6 +24,7 @@ concurrency: release
 env:
   BUILD_RECEIPT_FILENAME: "build-receipt.cyclonedx.json"
   RUN_RECEIPT_FILENAME: "run-receipt.cyclonedx.json"
+  PACKAGES_FILENAME: "packages.json"
   PATCHED_USNS_FILENAME: "patched-usns.json"
   BUILD_DIFF_ADDED_FILENAME: "build-diff-added.json"
   BUILD_DIFF_MODIFIED_FILENAME: "build-diff-modified.json"
@@ -93,6 +94,7 @@ jobs:
       with:
         build_receipt: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.BUILD_RECEIPT_FILENAME }}"
         run_receipt: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.RUN_RECEIPT_FILENAME }}"
+        output_path: "${{ github.workspace }}/${{ matrix.arch }}-${{ env.PACKAGES_FILENAME }}"
 
     - name: Find and Download Previous Patched USNs
       id: download_patched
@@ -125,7 +127,7 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/stack/get-usns@main
       with:
         distribution: ${{ steps.distro.outputs.distro }}
-        packages: ${{ steps.packages.outputs.packages }}
+        packages_filepath: "/github/workspace/${{ matrix.arch }}-${{ env.PACKAGES_FILENAME }}"
         last_usns: ${{ steps.patched.outputs.patched }}
 
     - name: Write USNs File
