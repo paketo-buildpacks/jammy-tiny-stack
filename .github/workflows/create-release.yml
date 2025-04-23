@@ -181,7 +181,7 @@ jobs:
       - name: Lookup Supported Architectures
         id: lookup
         run: |
-          #! /usr/bin/env bash
+
           set -euo pipefail
           shopt -s inherit_errexit
 
@@ -1077,12 +1077,15 @@ jobs:
 
     - name: Setup Release Assets
       id: assets
+      env:
+        ARCHITECTURES: ${{ needs.preparation.outputs.architectures }}
+        TAG: ${{ steps.tag.outputs.tag }}
+        STACKS: ${{ needs.preparation.outputs.stacks }}
+        OS_CODENAME: ${{ needs.preparation.outputs.os_codename }}
       run: |
 
-        stacks=$(echo '${{ needs.preparation.outputs.stacks }}' | jq -c '.[]')
-        archs=$(echo '${{ needs.preparation.outputs.architectures }}' | jq -c -r '.[]')
-        tag="${{ steps.tag.outputs.tag }}"
-        os_codename="${{ needs.preparation.outputs.os_codename }}"
+        stacks=$(echo "$STACKS" | jq -c '.[]')
+        archs=$(echo "$ARCHITECTURES" | jq -c -r '.[]')
 
         # Start with an empty array
         assets=$(jq -n -c '[]')
@@ -1096,14 +1099,14 @@ jobs:
           if [ -z "$stack_type" ]; then
             asset_prefix="${{ needs.preparation.outputs.github_repo_name }}"
           else
-            asset_prefix="${os_codename}-${stack_type}-stack"
+            asset_prefix="${OS_CODENAME}-${stack_type}-stack"
           fi
 
           assets="$(jq -c \
             --arg image_filepath "image-files" \
             --arg stack_name "${stack_name}" \
             --arg run_image "${run_image}" \
-            --arg tag "${{ steps.tag.outputs.tag }}" \
+            --arg tag "$TAG" \
             --arg asset_prefix "$asset_prefix" \
             '. += [
                 {
@@ -1119,7 +1122,7 @@ jobs:
               --arg image_filepath "image-files" \
               --arg stack_name "${stack_name}" \
               --arg build_image "${build_image}" \
-              --arg tag "${{ steps.tag.outputs.tag }}" \
+              --arg tag "$TAG" \
               --arg asset_prefix "$asset_prefix" \
               '. += [
                   {
@@ -1144,7 +1147,7 @@ jobs:
                 --arg hash_code_filepath "hash-code-files" \
                 --arg stack_name "${stack_name}" \
                 --arg run_image "${run_image}" \
-                --arg tag "${{ steps.tag.outputs.tag }}" \
+                --arg tag "$TAG" \
                 --arg asset_prefix "$asset_prefix" \
                 --arg arch "${arch_name}" \
                 --arg arch_prefix "${arch_prefix}" \
@@ -1163,7 +1166,7 @@ jobs:
                   --arg hash_code_filepath "hash-code-files" \
                   --arg stack_name "${stack_name}" \
                   --arg build_image "${build_image}" \
-                  --arg tag "${{ steps.tag.outputs.tag }}" \
+                  --arg tag "$TAG" \
                   --arg asset_prefix "$asset_prefix" \
                   --arg arch "${arch_name}" \
                   --arg arch_prefix "${arch_prefix}" \
@@ -1190,7 +1193,7 @@ jobs:
             if [ -z "$stack_type" ]; then
               asset_prefix="${{ needs.preparation.outputs.github_repo_name }}"
             else
-              asset_prefix="${os_codename}-${stack_type}-stack"
+              asset_prefix="${OS_CODENAME}-${stack_type}-stack"
             fi
 
             receipt_file_name=$(
@@ -1254,7 +1257,7 @@ jobs:
             if [ -z "$stack_type" ]; then
               asset_prefix="${{ needs.preparation.outputs.github_repo_name }}"
             else
-              asset_prefix="${os_codename}-${stack_type}-stack"
+              asset_prefix="${OS_CODENAME}-${stack_type}-stack"
             fi
 
             for arch in $archs; do
@@ -1267,7 +1270,7 @@ jobs:
               usn_asset_name=$(
                 echo '[
                   "'"$asset_prefix"'",
-                  "${{ steps.tag.outputs.tag }}",
+                  "$TAG",
                   "'"$arch_prefix"'",
                   "${{ env.PATCHED_USNS_FILENAME }}"
                 ]' | jq -r 'map(select(length > 0)) | join("-")'
@@ -1310,7 +1313,7 @@ jobs:
           # add release notes of the arch on the assets
           assets="$(jq -c \
             --arg release_notes_dir "${release_notes_dir}" \
-            --arg tag "${{ steps.tag.outputs.tag }}" \
+            --arg tag "$TAG" \
             --arg repo "${{ needs.preparation.outputs.github_repo_name }}" \
             --arg arch "${arch_name}" \
             --arg arch_prefix "${arch_prefix}" \
@@ -1327,49 +1330,52 @@ jobs:
 
     - name: Generate Release Notes Description
       id: notes
+      env:
+        ARCHITECTURES: ${{ needs.preparation.outputs.architectures }}
+        OS_CODENAME: ${{ needs.preparation.outputs.os_codename }}
+        STACKS: ${{ needs.preparation.outputs.stacks }}
       run: |
-
+        set -euo pipefail
         release_notes_dir="release-notes"
 
         # If there is only one architecture
-        archs_length=$(echo '${{ needs.preparation.outputs.architectures }}' | jq 'length')
+        archs_length=$(echo "$ARCHITECTURES" | jq 'length')
         if [ $archs_length -eq 1 ]; then
-          arch_name=$(echo '${{ needs.preparation.outputs.architectures }}' | jq -r '.[0].name')
+          arch_name=$(echo "$ARCHITECTURES" | jq -r '.[0].name')
           cat "${release_notes_dir}/${arch_name}-release-notes" > release_notes.md
         else
           echo "## Images" > release_notes.md
           echo "" >> release_notes.md
-          stacks=$(echo '${{ needs.preparation.outputs.stacks }}' | jq -c -r '.[]')
+          stacks=$(echo "$STACKS" | jq -c -r '.[]')
           for stack in $stacks; do
             run_image=$(echo "$stack" | jq -r '.run_image')
             build_image=$(echo "$stack" | jq -r '.build_image')
             create_build_image=$(echo "$stack" | jq -r '.create_build_image // false')
-            os_codename="${{ needs.preparation.outputs.os_codename }}"
 
             stack_type=$(echo "$stack" | jq -r '.stack_type // ""')
             if [ -z "$stack_type" ]; then
               stack_type="${{ needs.preparation.outputs.registry_repo_name }}"
             fi
 
-            if [ -f ${{ env.STACKS_FILEPATH }} ]; then
-              pattern_image_registry_name=$(jq '.pattern_image_registry_name' ${{ env.STACKS_FILEPATH }})
-              os_name=$(jq -r '.os_name' ${{ env.STACKS_FILEPATH }})
+            if [ -f "$STACKS_FILEPATH" ]; then
+              pattern_image_registry_name=$(jq '.pattern_image_registry_name' $STACKS_FILEPATH)
+              os_name=$(jq -r '.os_name' $STACKS_FILEPATH )
             else
               pattern_image_registry_name="build_image_run_image-os_codename-stack_type"
             fi
 
             if [ ${create_build_image} == true ]; then
               if [ $pattern_image_registry_name == "build_image_run_image-os_codename-stack_type" ]; then
-                echo "Build: \`${{ needs.preparation.outputs.repo_owner }}/${build_image}-${os_codename}-${stack_type}:${{ steps.tag.outputs.tag }}\`" >> release_notes.md
+                echo "Build: \`${{ needs.preparation.outputs.repo_owner }}/${build_image}-${OS_CODENAME}-${stack_type}:${{ steps.tag.outputs.tag }}\`" >> release_notes.md
               else
-                echo "Build: \`${{ needs.preparation.outputs.repo_owner }}/${os_name}-${os_codename}-${build_image}-${stack_type}:${{ steps.tag.outputs.tag }}\`" >> release_notes.md
+                echo "Build: \`${{ needs.preparation.outputs.repo_owner }}/${os_name}-${OS_CODENAME}-${build_image}-${stack_type}:${{ steps.tag.outputs.tag }}\`" >> release_notes.md
               fi
             fi
 
             if [ $pattern_image_registry_name == "build_image_run_image-os_codename-stack_type" ]; then
-              echo "Run: \`${{ needs.preparation.outputs.repo_owner }}/${run_image}-${os_codename}-${stack_type}:${{ steps.tag.outputs.tag }}\`" >> release_notes.md
+              echo "Run: \`${{ needs.preparation.outputs.repo_owner }}/${run_image}-${OS_CODENAME}-${stack_type}:${{ steps.tag.outputs.tag }}\`" >> release_notes.md
             else
-              echo "Run: \`${{ needs.preparation.outputs.repo_owner }}/${os_name}-${os_codename}-${run_image}-${stack_type}:${{ steps.tag.outputs.tag }}\`" >> release_notes.md
+              echo "Run: \`${{ needs.preparation.outputs.repo_owner }}/${os_name}-${OS_CODENAME}-${run_image}-${stack_type}:${{ steps.tag.outputs.tag }}\`" >> release_notes.md
             fi
           done
         fi

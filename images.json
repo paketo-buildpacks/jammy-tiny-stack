@@ -4,6 +4,7 @@
   "platforms": ["linux/amd64", "linux/arm64"],
   "os_name": "ubuntu",
   "os_codename": "jammy",
+  "pattern_image_registry_name": "build_image_run_image-os_codename-stack_type",
   "images": [
     {
       "name": "jammy-tiny",
