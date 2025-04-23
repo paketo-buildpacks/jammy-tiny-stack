@@ -181,7 +181,7 @@ jobs:
       - name: Lookup Supported Architectures
         id: lookup
         run: |
-          #! /usr/bin/env bash
+
           set -euo pipefail
           shopt -s inherit_errexit
 
@@ -1328,7 +1328,7 @@ jobs:
     - name: Generate Release Notes Description
       id: notes
       run: |
-
+        set -euo pipefail
         release_notes_dir="release-notes"
 
         # If there is only one architecture
@@ -1340,20 +1340,20 @@ jobs:
           echo "## Images" > release_notes.md
           echo "" >> release_notes.md
           stacks=$(echo '${{ needs.preparation.outputs.stacks }}' | jq -c -r '.[]')
+          os_codename="${{ needs.preparation.outputs.os_codename }}"
           for stack in $stacks; do
             run_image=$(echo "$stack" | jq -r '.run_image')
             build_image=$(echo "$stack" | jq -r '.build_image')
             create_build_image=$(echo "$stack" | jq -r '.create_build_image // false')
-            os_codename="${{ needs.preparation.outputs.os_codename }}"
 
             stack_type=$(echo "$stack" | jq -r '.stack_type // ""')
             if [ -z "$stack_type" ]; then
               stack_type="${{ needs.preparation.outputs.registry_repo_name }}"
             fi
 
-            if [ -f ${{ env.STACKS_FILEPATH }} ]; then
-              pattern_image_registry_name=$(jq '.pattern_image_registry_name' ${{ env.STACKS_FILEPATH }})
-              os_name=$(jq -r '.os_name' ${{ env.STACKS_FILEPATH }})
+            if [ -f "$STACKS_FILEPATH" ]; then
+              pattern_image_registry_name=$(jq '.pattern_image_registry_name' $STACKS_FILEPATH)
+              os_name=$(jq -r '.os_name' $STACKS_FILEPATH )
             else
               pattern_image_registry_name="build_image_run_image-os_codename-stack_type"
             fi
