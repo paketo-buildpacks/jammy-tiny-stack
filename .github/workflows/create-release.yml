@@ -357,6 +357,11 @@ jobs:
         patched=$(jq --compact-output . < "./${{ matrix.arch.name }}-${{ matrix.stacks.name }}-${{ env.PATCHED_USNS_FILENAME }}-previous")
         printf "patched=%s\n" "${patched}" >> "$GITHUB_OUTPUT"
 
+      #TODO remove debug code.
+    - name: CAT packages.json
+      run: |
+        cat "./${{ matrix.arch.name }}-package-list-${{ matrix.stacks.name }}"
+
     - name: Get New USNs
       id: usns
       uses: paketo-buildpacks/github-config/actions/stack/get-usns@main
