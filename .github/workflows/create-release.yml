@@ -364,15 +364,7 @@ jobs:
         distribution: ${{ needs.preparation.outputs.os_codename }}
         packages_filepath: "./${{ matrix.arch.name }}-package-list-${{ matrix.stacks.name }}"
         last_usns: ${{ steps.patched.outputs.patched }}
-
-    - name: Write USNs File
-      id: write_usns
-      run: |
-        jq . <<< "${USNS}" > "./${USNS_PATH}"
-        echo "usns=./${USNS_PATH}" >> "$GITHUB_OUTPUT"
-      env:
-        USNS_PATH: "${{ matrix.arch.name }}-${{ matrix.stacks.name }}-${{ env.PATCHED_USNS_FILENAME }}"
-        USNS: ${{ steps.usns.outputs.usns }}
+        usns_output_path: "./${{ matrix.arch.name }}-${{ matrix.stacks.name }}-${{ env.PATCHED_USNS_FILENAME }}"
 
     - name: Upload USNs file
       uses: actions/upload-artifact@v4
