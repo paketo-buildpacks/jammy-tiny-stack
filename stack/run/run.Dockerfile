@@ -21,11 +21,12 @@ RUN apt download $packages \
     && for pkg in $packages; do \
       dpkg-deb --field $pkg*.deb > /tiny/var/lib/dpkg/status.d/$pkg \
       && dpkg-deb --extract $pkg*.deb /tiny \
-      && dpkg-deb -c $pkg*.deb | \
-        sed -e 's| -> .*||' \
-            -e 's|.* ||p' | \
-        sed -e 's|^\./|/|' \
-            -e 's|^/$|/.|' > /tiny/var/lib/dpkg/info/$pkg.list; \
+      && dpkg-deb -c $pkg*.deb | awk '{print substr($6, 2)}' > /tiny/var/lib/dpkg/info/$pkg.list \
+      && sed -i '1s|.*|/.|' /tiny/var/lib/dpkg/info/$pkg.list \
+      && sed -i '/\/$/s|/$||' /tiny/var/lib/dpkg/info/$pkg.list \
+      && dpkg-deb -e $pkg*.deb MD5SUMS \
+      && cp MD5SUMS/md5sums /tiny/var/lib/dpkg/info/$pkg.md5sums \
+      && rm -rf MD5SUMS; \
     done
 
 RUN ./install-certs.sh
@@ -52,4 +53,3 @@ RUN rm -rf /tiny/var/lib/dpkg/status
 
 FROM scratch
 COPY --from=builder /tiny/ /
-
