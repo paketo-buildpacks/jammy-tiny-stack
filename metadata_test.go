@@ -221,6 +221,8 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
+			Expect(image).To(HaveFile("/var/lib/dpkg/info/base-files.md5sums"))
+
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/ca-certificates", SatisfyAll(
 				ContainSubstring("Package: ca-certificates"),
 				MatchRegexp("Version: [0-9]+"),
@@ -230,6 +232,8 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/ca-certificates.list", SatisfyAll(
 				ContainSubstring("/."),
 			)))
+
+			Expect(image).To(HaveFile("/var/lib/dpkg/info/ca-certificates.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/libc6", SatisfyAll(
 				ContainSubstring("Package: libc6"),
@@ -243,6 +247,8 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
+			Expect(image).To(HaveFile("/var/lib/dpkg/info/libc6.md5sums"))
+
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/libssl3", SatisfyAll(
 				ContainSubstring("Package: libssl3"),
 				MatchRegexp("Version: [0-9\\.\\-]+ubuntu[0-9\\.]+"),
@@ -255,6 +261,8 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
+			Expect(image).To(HaveFile("/var/lib/dpkg/info/libssl3.md5sums"))
+
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/netbase", SatisfyAll(
 				ContainSubstring("Package: netbase"),
 				MatchRegexp("Version: [0-9\\.]+"),
@@ -264,6 +272,8 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/netbase.list", SatisfyAll(
 				ContainSubstring("/."),
 			)))
+
+			Expect(image).To(HaveFile("/var/lib/dpkg/info/netbase.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/openssl", SatisfyAll(
 				ContainSubstring("Package: openssl"),
@@ -277,6 +287,8 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
+			Expect(image).To(HaveFile("/var/lib/dpkg/info/openssl.md5sums"))
+
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/tzdata", SatisfyAll(
 				ContainSubstring("Package: tzdata"),
 				MatchRegexp("Version: [a-z0-9\\.\\-]+ubuntu[0-9\\.]+"),
@@ -286,6 +298,8 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/tzdata.list", SatisfyAll(
 				ContainSubstring("/."),
 			)))
+
+			Expect(image).To(HaveFile("/var/lib/dpkg/info/tzdata.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/zlib1g", SatisfyAll(
 				ContainSubstring("Package: zlib1g"),
@@ -298,6 +312,8 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/zlib1g.list", SatisfyAll(
 				ContainSubstring("/."),
 			)))
+
+			Expect(image).To(HaveFile("/var/lib/dpkg/info/zlib1g.md5sums"))
 
 			Expect(image).NotTo(HaveFile("/usr/share/ca-certificates"))
 
