@@ -4,7 +4,7 @@
     "platforms": ["linux/amd64", "linux/arm64"],
     "os_name": "ubuntu",
     "os_codename": "jammy",
-    "repo_type": "tiny",
+    "repo_type": "stack",
     "images": [
       {
         "name": "jammy-tiny",
