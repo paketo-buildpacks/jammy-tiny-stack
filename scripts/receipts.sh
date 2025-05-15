@@ -6,7 +6,7 @@ set -o pipefail
 readonly PROG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly STACK_DIR="$(cd "${PROG_DIR}/.." && pwd)"
 readonly BIN_DIR="${STACK_DIR}/.bin"
-readonly BUILD_DIR="${STACK_DIR}/build"
+readonly DEFAULT_BUILD_DIR="${STACK_DIR}/build"
 
 # shellcheck source=SCRIPTDIR/.util/tools.sh
 source "${PROG_DIR}/.util/tools.sh"
@@ -16,11 +16,12 @@ source "${PROG_DIR}/.util/print.sh"
 
 function main() {
   local build run receiptFilename buildReceipt runReceipt receipts
-  build="${BUILD_DIR}/build.oci"
-  run="${BUILD_DIR}/run.oci"
+  build="${DEFAULT_BUILD_DIR}/build.oci"
+  run="${DEFAULT_BUILD_DIR}/run.oci"
   receiptFilename="receipt.cyclonedx.json"
-  buildReceipt="${BUILD_DIR}/build-${receiptFilename}"
-  runReceipt="${BUILD_DIR}/run-${receiptFilename}"
+  buildReceipt="${DEFAULT_BUILD_DIR}/build-${receiptFilename}"
+  runReceipt="${DEFAULT_BUILD_DIR}/run-${receiptFilename}"
+  build_image_specified=false
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
@@ -32,6 +33,7 @@ function main() {
 
       --build-image|-b)
         build="${2}"
+        build_image_specified=true
         shift 2
         ;;
 
@@ -62,11 +64,18 @@ function main() {
 
   tools::install
 
-		
-  # We are generating receipts for all platforms
-  receipts::generate::multi::arch "${build}" "${run}" "${buildReceipt}" "${runReceipt}"
+  # If the build image is specified, then the build directory
+  # is differenet from the default
+  if [ $build_image_specified = true ]; then
+    build_dir=$(dirname "${build}")
+  else
+    build_dir="${DEFAULT_BUILD_DIR}"
+  fi
 
-  util::print::success "Success! Receipts are:\n  ${buildReceipt}\n  ${runReceipt}\n"
+  # We are generating receipts for all platforms
+  receiptFilenames=$(receipts::generate::multi::arch "${build}" "${run}" "${buildReceipt}" "${runReceipt}" "${build_dir}")
+
+  util::print::success "Success! Receipts are:\n${receiptFilenames}"
 }
 
 function usage() {
@@ -79,13 +88,13 @@ stack.
 OPTIONS
   --help          -h  prints the command usage
   --build-image   -b  path to OCI image of build image. Defaults to
-                      ${BUILD_DIR}/build.oci
+                      ${DEFAULT_BUILD_DIR}/build.oci
   --run-image     -r  path to OCI image of build image
-                      ${BUILD_DIR}/run.oci
+                      ${DEFAULT_BUILD_DIR}/run.oci
   --build-receipt -B  path to output build image package receipt. Defaults to
-                      ${BUILD_DIR}/build-receipt.cyclonedx.json
+                      ${DEFAULT_BUILD_DIR}/build-receipt.cyclonedx.json
   --run-receipt   -R  path to output run image package receipt. Defaults to
-                      ${BUILD_DIR}/run-receipt.cyclonedx.json
+                      ${DEFAULT_BUILD_DIR}/run-receipt.cyclonedx.json
 USAGE
 }
 
@@ -100,13 +109,17 @@ function tools::install() {
 
 # Generates syft receipts for each architecture for given oci archives
 function receipts::generate::multi::arch() {
-  local buildArchive runArchive registryPort registryPid localRegistry imageType archiveName imageReceipt
+  local buildArchive runArchive
+  local registryPort registryPid localRegistry
+  local imageType archiveName imageReceipt receiptFilenames
 
+  receiptFilenames=""
   buildArchive="${1}"
   runArchive="${2}"
   buildOutput="${3}"
   runOutput="${4}"
-  
+  build_dir="${5}"
+
   registryPort=$(get::random::port)
   registryPid=$(local::registry::start $registryPort)
   localRegistry="127.0.0.1:$registryPort"
@@ -116,11 +129,11 @@ function receipts::generate::multi::arch() {
     --build-ref "$localRegistry/build" \
     --build-archive $buildArchive \
     --run-ref "$localRegistry/run" \
-    --run-archive $runArchive
+    --run-archive $runArchive >/dev/null
 
-  # Ensure we can write to the BUILD_DIR
-  if [ $(stat -c %u build) = "0" ]; then
-    sudo chown -R "$(id -u):$(id -g)" "$BUILD_DIR"
+  # Ensure we can write to the build_dir
+  if [ $(stat -c %u $build_dir) = "0" ]; then
+    sudo chown -R "$(id -u):$(id -g)" "$build_dir"
   fi
 
   for archivePath in "${buildArchive}" "${runArchive}" ; do
@@ -130,60 +143,30 @@ function receipts::generate::multi::arch() {
     util::print::title "Generating package SBOM for ${archiveName}"
 
     for imageArch in $(crane manifest "$localRegistry/$imageType" | jq -r '.manifests[].platform.architecture'); do
+
       if [[ "$imageType" = "build" ]]; then
         dir=$(dirname ${buildOutput})
         fileName=$(basename ${buildOutput})
-        imageReceipt="${dir}/${imageArch}-${fileName}"
       elif [[ "$imageType" = "run" ]]; then
         dir=$(dirname ${runOutput})
         fileName=$(basename ${runOutput})
-        imageReceipt="${dir}/${imageArch}-${fileName}"
       fi
+
+      imageReceipt="${dir}/${imageArch}-${fileName}"
 
       util::print::info "Generating CycloneDX package SBOM using syft for $archiveName on platform linux/$imageArch saved as $imageReceipt"
 
       # Generate the architecture-specific SBOM from image in the local registry
-      syft packages "registry:$localRegistry/$imageType" \
-        --output cyclonedx-json \
-        --file "$imageReceipt" \
+      syft scan "registry:$localRegistry/$imageType" \
+        --output cyclonedx-json="$imageReceipt" \
         --platform "linux/$imageArch"
+
+      receiptFilenames+="$imageReceipt\n"
     done
   done
 
   kill $registryPid
-}
-
-# Returns a random unused port
-function get::random::port() {
-  local port=$(shuf -i 50000-65000 -n 1)
-  netstat -lat | grep $port > /dev/null
-  if [[ $? == 1 ]] ; then
-    echo $port
-  else
-    echo get::random::port
-  fi
-}
-
-# Starts a local registry on the given port and returns the pid
-function local::registry::start() {
-  local registryPort registryPid localRegistry
-
-  registryPort="$1"
-  localRegistry="127.0.0.1:$registryPort"
-
-  # Start a local in-memory registry so we can work with oci archives
-  PORT=$registryPort crane registry serve --insecure > /dev/null 2>&1 &
-  registryPid=$!
-
-  # Stop the registry if execution is interrupted
-  trap "kill $registryPid" 1 2 3 6
-
-  # Wait for the registry to be available
-  until crane catalog $localRegistry > /dev/null 2>&1; do
-    sleep 1
-  done
-
-  echo $registryPid
+  echo $receiptFilenames
 }
 
 main "${@:-}"
