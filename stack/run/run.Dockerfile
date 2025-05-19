@@ -24,9 +24,9 @@ RUN apt download $packages \
       && dpkg-deb -c $pkg*.deb | awk '{print substr($6, 2)}' > /tiny/var/lib/dpkg/info/$pkg.list \
       && sed -i '1s|.*|/.|' /tiny/var/lib/dpkg/info/$pkg.list \
       && sed -i '/\/$/s|/$||' /tiny/var/lib/dpkg/info/$pkg.list \
-      && dpkg-deb -e $pkg*.deb MD5SUMS \
-      && cp MD5SUMS/md5sums /tiny/var/lib/dpkg/info/$pkg.md5sums \
-      && rm -rf MD5SUMS; \
+      && dpkg-deb --control $pkg*.deb CONTROL \
+      && cp CONTROL/md5sums /tiny/var/lib/dpkg/status.d/$pkg.md5sums \
+      && rm -rf CONTROL; \
     done
 
 RUN ./install-certs.sh
