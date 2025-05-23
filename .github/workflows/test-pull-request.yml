@@ -8,15 +8,15 @@ on:
 jobs:
   test:
     name: Acceptance Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Setup Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v3
       with:
-        go-version: 1.24.x
+        go-version: 'stable'
 
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
 
     # https://github.com/docker/setup-qemu-action
     - name: Set up QEMU
@@ -25,14 +25,14 @@ jobs:
     - name: Create stack
       id: create-stack
       run: |
-        ./scripts/create.sh
+        scripts/create.sh
 
     - name: Run Acceptance Tests
       run: ./scripts/test.sh
 
   upload:
     name: Upload Workflow Event Payload
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
