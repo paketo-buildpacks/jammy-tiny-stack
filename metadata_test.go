@@ -221,7 +221,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
-			Expect(image).To(HaveFile("/var/lib/dpkg/info/base-files.md5sums"))
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/base-files.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/ca-certificates", SatisfyAll(
 				ContainSubstring("Package: ca-certificates"),
@@ -233,7 +233,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
-			Expect(image).To(HaveFile("/var/lib/dpkg/info/ca-certificates.md5sums"))
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/ca-certificates.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/libc6", SatisfyAll(
 				ContainSubstring("Package: libc6"),
@@ -247,7 +247,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
-			Expect(image).To(HaveFile("/var/lib/dpkg/info/libc6.md5sums"))
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/libc6.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/libssl3", SatisfyAll(
 				ContainSubstring("Package: libssl3"),
@@ -261,7 +261,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
-			Expect(image).To(HaveFile("/var/lib/dpkg/info/libssl3.md5sums"))
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/libssl3.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/netbase", SatisfyAll(
 				ContainSubstring("Package: netbase"),
@@ -273,7 +273,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
-			Expect(image).To(HaveFile("/var/lib/dpkg/info/netbase.md5sums"))
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/netbase.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/openssl", SatisfyAll(
 				ContainSubstring("Package: openssl"),
@@ -287,7 +287,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
-			Expect(image).To(HaveFile("/var/lib/dpkg/info/openssl.md5sums"))
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/openssl.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/tzdata", SatisfyAll(
 				ContainSubstring("Package: tzdata"),
@@ -299,7 +299,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
-			Expect(image).To(HaveFile("/var/lib/dpkg/info/tzdata.md5sums"))
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/tzdata.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/zlib1g", SatisfyAll(
 				ContainSubstring("Package: zlib1g"),
@@ -313,7 +313,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				ContainSubstring("/."),
 			)))
 
-			Expect(image).To(HaveFile("/var/lib/dpkg/info/zlib1g.md5sums"))
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/zlib1g.md5sums"))
 
 			Expect(image).NotTo(HaveFile("/usr/share/ca-certificates"))
 
