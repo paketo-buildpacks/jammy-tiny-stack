@@ -3,7 +3,7 @@ FROM ubuntu:jammy AS builder
 ARG packages
 
 RUN apt-get update && \
-  apt-get install -y xz-utils binutils zstd openssl
+  apt-get install -y xz-utils binutils zstd openssl locales
 
 ADD install-certs.sh .
 
@@ -30,6 +30,19 @@ RUN apt download $packages \
     done
 
 RUN ./install-certs.sh
+
+# Install and configure locales
+RUN mkdir -p /tiny/usr/lib/locale /tiny/usr/share/locale /tiny/usr/share/i18n /tiny/etc
+RUN locale-gen en_US.UTF-8
+RUN cp -r /usr/lib/locale/* /tiny/usr/lib/locale/ || true
+RUN cp -r /usr/share/locale/* /tiny/usr/share/locale/ || true
+RUN cp -r /usr/share/i18n/* /tiny/usr/share/i18n/ || true
+# Copy locale-related libraries for multiple architectures
+RUN mkdir -p /tiny/usr/lib/x86_64-linux-gnu /tiny/usr/lib/aarch64-linux-gnu
+RUN find /usr/lib -name "*locale*" -type f -exec cp {} /tiny/usr/lib/ \; 2>/dev/null || true
+RUN find /usr/lib/x86_64-linux-gnu -name "*locale*" -type f -exec cp {} /tiny/usr/lib/x86_64-linux-gnu/ \; 2>/dev/null || true
+RUN find /usr/lib/aarch64-linux-gnu -name "*locale*" -type f -exec cp {} /tiny/usr/lib/aarch64-linux-gnu/ \; 2>/dev/null || true
+RUN echo "LANG=en_US.UTF-8\nLC_ALL=en_US.UTF-8" > /tiny/etc/locale.conf
 
 RUN find /tiny/usr/share/doc/*/* ! -name copyright | xargs rm -rf && \
   rm -rf \
