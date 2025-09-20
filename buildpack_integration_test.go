@@ -64,12 +64,12 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 		buildpackStore := occam.NewBuildpackStore()
 
 		buildPlanBuildpack, err = buildpackStore.Get.
-			Execute("github.com/paketo-community/build-plan")
+			Execute("paketocommunity/build-plan")
 		Expect(err).NotTo(HaveOccurred())
 
 		goDistBuildpack, err = buildpackStore.Get.
 			WithVersion("1.2.3").
-			Execute("github.com/paketo-buildpacks/go-dist")
+			Execute("paketobuildpacks/go-dist")
 		Expect(err).NotTo(HaveOccurred())
 
 		source, err = occam.Source(filepath.Join("integration", "testdata", "simple_app"))
@@ -84,6 +84,14 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
   build-image = "%s:latest"
   id = "io.buildpacks.stacks.jammy.tiny"
   run-image = "%s:latest"
+
+[[targets]]
+  arch = "amd64"
+  os = "linux"
+
+[[targets]]
+  arch = "arm64"
+  os = "linux"
 `,
 			stack.BuildImageID,
 			stack.RunImageID,
@@ -112,7 +120,6 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 
 		Expect(docker.Image.Remove.Execute(stack.BuildImageID)).To(Succeed())
 		Expect(docker.Image.Remove.Execute(stack.RunImageID)).To(Succeed())
-		Expect(docker.Image.Remove.Execute(REGISTRY_IMAGE)).To(Succeed())
 
 		Expect(docker.Image.Remove.Execute(fmt.Sprintf("buildpacksio/lifecycle:%s", lifecycleVersion))).To(Succeed())
 
