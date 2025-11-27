@@ -66,6 +66,8 @@ platforms = ["linux/amd64", "linux/arm64"]
     openssl \
     tzdata \
     zlib1g \
+    libstdc++6 \
+    libgcc-s1
     """
 
   [run.platforms."linux/arm64".args]
