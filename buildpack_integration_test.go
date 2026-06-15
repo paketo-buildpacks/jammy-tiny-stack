@@ -91,6 +91,14 @@ func testBuildpackIntegration(t *testing.T, context spec.G, it spec.S) {
 [[targets]]
   arch = "arm64"
   os = "linux"
+
+[[targets]]
+  arch = "s390x"
+  os = "linux"
+
+[[targets]]
+  arch = "ppc64le"
+  os = "linux"
 `,
 			stack.BuildImageID,
 			stack.RunImageID,

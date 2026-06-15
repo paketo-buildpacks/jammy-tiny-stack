@@ -57,7 +57,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			indexManifest, err := index.IndexManifest()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(indexManifest.Manifests).To(HaveLen(2))
+			Expect(indexManifest.Manifests).To(HaveLen(4))
 
 			platforms := []v1.Platform{}
 			for _, manifest := range indexManifest.Manifests {
@@ -73,6 +73,14 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			Expect(platforms).To(ContainElement(v1.Platform{
 				OS:           "linux",
 				Architecture: "arm64",
+			}))
+			Expect(platforms).To(ContainElement(v1.Platform{
+				OS:           "linux",
+				Architecture: "s390x",
+			}))
+			Expect(platforms).To(ContainElement(v1.Platform{
+				OS:           "linux",
+				Architecture: "ppc64le",
 			}))
 
 			image, err := index.Image(indexManifest.Manifests[0].Digest)
@@ -155,7 +163,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			indexManifest, err := index.IndexManifest()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(indexManifest.Manifests).To(HaveLen(2))
+			Expect(indexManifest.Manifests).To(HaveLen(4))
 			platforms := []v1.Platform{}
 			for _, manifest := range indexManifest.Manifests {
 				platforms = append(platforms, v1.Platform{
@@ -170,6 +178,14 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			Expect(platforms).To(ContainElement(v1.Platform{
 				OS:           "linux",
 				Architecture: "arm64",
+			}))
+			Expect(platforms).To(ContainElement(v1.Platform{
+				OS:           "linux",
+				Architecture: "s390x",
+			}))
+			Expect(platforms).To(ContainElement(v1.Platform{
+				OS:           "linux",
+				Architecture: "ppc64le",
 			}))
 
 			image, err := index.Image(indexManifest.Manifests[0].Digest)
@@ -214,7 +230,9 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				MatchRegexp("Version: [0-9]+ubuntu[0-9\\.]+"),
 				SatisfyAny(
 					ContainSubstring("Architecture: amd64"),
-					ContainSubstring("Architecture: arm64")),
+					ContainSubstring("Architecture: arm64"),
+					ContainSubstring("Architecture: s390x"),
+					ContainSubstring("Architecture: ppc64le")),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/base-files.list", SatisfyAll(
@@ -240,7 +258,9 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				MatchRegexp("Version: [0-9\\.\\-]+ubuntu[0-9\\.]+"),
 				SatisfyAny(
 					ContainSubstring("Architecture: amd64"),
-					ContainSubstring("Architecture: arm64")),
+					ContainSubstring("Architecture: arm64"),
+					ContainSubstring("Architecture: s390x"),
+					ContainSubstring("Architecture: ppc64le")),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/libc6.list", SatisfyAll(
@@ -254,7 +274,9 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				MatchRegexp("Version: [0-9\\.\\-]+ubuntu[0-9\\.]+"),
 				SatisfyAny(
 					ContainSubstring("Architecture: amd64"),
-					ContainSubstring("Architecture: arm64")),
+					ContainSubstring("Architecture: arm64"),
+					ContainSubstring("Architecture: s390x"),
+					ContainSubstring("Architecture: ppc64le")),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/libssl3.list", SatisfyAll(
@@ -280,7 +302,9 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				MatchRegexp("Version: [0-9\\.\\-]+ubuntu[0-9\\.]+"),
 				SatisfyAny(
 					ContainSubstring("Architecture: amd64"),
-					ContainSubstring("Architecture: arm64")),
+					ContainSubstring("Architecture: arm64"),
+					ContainSubstring("Architecture: s390x"),
+					ContainSubstring("Architecture: ppc64le")),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/openssl.list", SatisfyAll(
@@ -306,7 +330,9 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 				MatchRegexp("Version: [a-z0-9\\.\\-\\:]+ubuntu[0-9\\.]+"),
 				SatisfyAny(
 					ContainSubstring("Architecture: amd64"),
-					ContainSubstring("Architecture: arm64")),
+					ContainSubstring("Architecture: arm64"),
+					ContainSubstring("Architecture: s390x"),
+					ContainSubstring("Architecture: ppc64le")),
 			)))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/zlib1g.list", SatisfyAll(

@@ -2,7 +2,7 @@ id = "io.buildpacks.stacks.jammy.tiny"
 homepage = "https://github.com/paketo-buildpacks/jammy-tiny-stack"
 maintainer = "Paketo Buildpacks"
 
-platforms = ["linux/amd64", "linux/arm64"]
+platforms = ["linux/amd64", "linux/arm64", "linux/s390x", "linux/ppc64le"]
 
 [build]
   description = "ubuntu:jammy with compilers and shell utilities"
@@ -47,6 +47,24 @@ platforms = ["linux/amd64", "linux/arm64"]
     deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main universe multiverse
     """
 
+  [build.platforms."linux/s390x".args]
+    architecture = "s390x"
+
+    sources = """
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main universe multiverse
+    """
+
+  [build.platforms."linux/ppc64le".args]
+    architecture = "ppc64le"
+
+    sources = """
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main universe multiverse
+    """
+
 [run]
   description = "distroless-like jammy"
   dockerfile = "./run/run.Dockerfile"
@@ -72,6 +90,24 @@ platforms = ["linux/amd64", "linux/arm64"]
 
   [run.platforms."linux/arm64".args]
     architecture = "arm64"
+
+    sources = """
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main universe multiverse
+    """
+
+  [run.platforms."linux/s390x".args]
+    architecture = "s390x"
+
+    sources = """
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main universe multiverse
+    """
+
+  [run.platforms."linux/ppc64le".args]
+    architecture = "ppc64le"
 
     sources = """
     deb http://ports.ubuntu.com/ubuntu-ports/ jammy main universe multiverse
