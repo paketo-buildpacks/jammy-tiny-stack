@@ -212,7 +212,7 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(image).To(SatisfyAll(
 				HaveFileWithContent("/etc/group", ContainSubstring("cnb:x:1000:")),
-				HaveFileWithContent("/etc/passwd", ContainSubstring("cnb:x:1002:1000::/home/cnb:/sbin/nologin")),
+				HaveFileWithContent("/etc/passwd", ContainSubstring("cnb:x:1002:1000::/home/cnb:/bin/sh")),
 				HaveDirectory("/home/cnb"),
 			))
 
@@ -252,6 +252,22 @@ func testMetadata(t *testing.T, context spec.G, it spec.S) {
 			)))
 
 			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/ca-certificates.md5sums"))
+
+			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/dash", SatisfyAll(
+				ContainSubstring("Package: dash"),
+				MatchRegexp("Version: [a-z0-9\\.\\-\\+]+"),
+				SatisfyAny(
+					ContainSubstring("Architecture: amd64"),
+					ContainSubstring("Architecture: arm64"),
+					ContainSubstring("Architecture: s390x"),
+					ContainSubstring("Architecture: ppc64le")),
+			)))
+
+			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/info/dash.list", SatisfyAll(
+				ContainSubstring("/."),
+			)))
+
+			Expect(image).To(HaveFile("/var/lib/dpkg/status.d/dash.md5sums"))
 
 			Expect(image).To(HaveFileWithContent("/var/lib/dpkg/status.d/libc6", SatisfyAll(
 				ContainSubstring("Package: libc6"),
