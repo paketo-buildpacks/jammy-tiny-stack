@@ -53,3 +53,4 @@ RUN rm -rf /tiny/var/lib/dpkg/status
 
 FROM scratch
 COPY --from=builder /tiny/ /
+LABEL org.opencontainers.image.source="https://github.com/paketo-buildpacks/jammy-tiny-stack"
